@@ -1,0 +1,501 @@
+ #include <stdio.h>
+  2 #include <stdlib.h>
+  3 #include <netdb.h>
+  4 #include <errno.h>
+  5 #include <sys/types.h>
+  6 #include <sys/stat.h>
+  7 #include <fcntl.h>
+  8 #include <unistd.h>
+  9 #include <string.h>
+ 10 #include <sys/ioctl.h>
+ 11 #include <sys/fcntl.h>
+ 12 
+ 13 
+ 14 #define MAXBUF             1024        //宏大小
+ 15 #define STDIN_FILENO     1            //标准输入
+ 16 #define STDOUT_FILENO     0            //标准输出
+ 17 
+ 18 
+ 19 #define USERNAME     220            //用户名
+ 20 #define PASSWORD      331            //密码
+ 21 #define LOGIN           230            //登录
+ 22 #define PATHNAME      257            //路径名
+ 23 #define CLOSEDATA     226            //    
+ 24 #define ACTIONOK      250            //
+ 25 
+ 26 
+ 27 char *rbuf,*rbuf1,*wbuf,*wbuf1;
+ 28 
+ 29 
+ 30 char filename[100];                    //文件名
+ 31 char *host;                            //要连接的服务器地址
+ 32 
+ 33 
+ 34 struct sockaddr_in servaddr;        //服务器的地址、端口结构体
+ 35 
+ 36 //1.第一步，打开一个TCP链接
+ 37 int cliopen(char *host,int port);
+ 38 //
+ 39 int strtosrv(char *str);
+ 40 int ftp_get(int sck,char *pDownloadFileName);
+ 41 int ftp_put(int sck,char *pUploadFileName_s);
+ 42 void cmd_tcp(int sockfd);                        //
+ 43 
+ 44 //主函数
+ 45 int main(int argc,char *argv[])
+ 46 {
+ 47     int fd;
+ 48 
+ 49     //判断输入参数
+ 50     if(0 != argc -2)
+ 51     {
+ 52         printf("%s\n","missing <hostname>");
+ 53         exit(0);
+ 54     }
+ 55 
+ 56     //指定服务器地址
+ 57     host = argv[1];
+ 58     //指定端口
+ 59     int port = 21;
+ 60    
+ 61     rbuf = (char *)malloc(MAXBUF*sizeof(char));
+ 62     rbuf1 = (char *)malloc(MAXBUF*sizeof(char));
+ 63     wbuf = (char *)malloc(MAXBUF*sizeof(char));
+ 64     wbuf1 = (char *)malloc(MAXBUF*sizeof(char));
+ 65 
+ 66     //1.得到已连接的套接字
+ 67     fd = cliopen(host,port);
+ 68 
+ 69     //2.
+ 70     cmd_tcp(fd);
+ 71     
+ 72     exit(0);
+ 73 }
+ 74 
+ 75 
+ 76 
+ 77 
+ 78 //1.第一步，打开一个TCP链接
+ 79 int cliopen(char *host,int port)
+ 80 {
+ 81     int control_sock;
+ 82 
+ 83     //1.FTP 自己的传输地址结构体
+ 84     struct hostent *ht = NULL;
+ 85 
+ 86     //2.创建套接字
+ 87     control_sock = socket(AF_INET,SOCK_STREAM,0);
+ 88     if(control_sock < 0)
+ 89     {
+ 90        printf("socket error\n");
+ 91        return -1;
+ 92     }
+ 93 
+ 94     //3.将IP地址进行转换，变为FTP地址结构体
+ 95     ht = gethostbyname(host);
+ 96     if(!ht)
+ 97     { 
+ 98         return -1;
+ 99     }
+100     
+101    //4.连接服务器，返回套接字
+102     memset(&servaddr,0,sizeof(struct sockaddr_in));
+103     memcpy(&servaddr.sin_addr.s_addr,ht->h_addr,ht->h_length);
+104     servaddr.sin_family = AF_INET;
+105     servaddr.sin_port = htons(port);
+106     
+107     if(connect(control_sock,(struct sockaddr*)&servaddr,sizeof(struct sockaddr)) == -1)
+108     {
+109         return -1;
+110     }
+111     return control_sock;
+112 }
+113 
+114 //匹配下载的文件名
+115 int s(char *str,char *s2)
+116 {
+117     //char s1[100];
+118      
+119     return sscanf(str," get %s",s2) == 1;
+120    
+121 }
+122 
+123 //匹配上传的文件名
+124 int st(char *str,char *s1)
+125 {
+126     return sscanf(str," put %s",s1) == 1;
+127 }
+128 
+129 //获取服务器 发送给 客户端的 IP地址 和 端口;
+130 int strtosrv(char *str)
+131 {
+132    int addr[6];
+133    //printf("%s\n",str);
+134    sscanf(str,"%*[^(](%d,%d,%d,%d,%d,%d)",&addr[0],&addr[1],&addr[2],&addr[3],&addr[4],&addr[5]);
+135    bzero(host,strlen(host));
+136    sprintf(host,"%d.%d.%d.%d",addr[0],addr[1],addr[2],addr[3]);
+137    int port = addr[4]*256 + addr[5];
+138    return port;
+139 }
+140 
+141 //显示文件列表
+142 void ftp_list(int sockfd)
+143 {
+144     int nread;
+145     for(;;)
+146     {
+147         if((nread = recv(sockfd,rbuf1,MAXBUF,0)) < 0)
+148         {
+149             printf("recv error\n");
+150         }
+151         else if(nread == 0)
+152         {
+153             //printf("over\n");
+154             break;
+155         }
+156         if(write(STDOUT_FILENO,rbuf1,nread) != nread)
+157             printf("send error to stdout\n");
+158         /*else
+159             printf("read something\n");*/
+160     }
+161     if(close(sockfd) < 0)
+162         printf("close error\n");
+163 }
+164 
+165 //下载文件
+166 int ftp_get(int sck,char *pDownloadFileName)
+167 {
+168    int handle = open(pDownloadFileName,O_WRONLY | O_CREAT | O_TRUNC, S_IREAD| S_IWRITE);
+169    int nread;
+170    printf("%d\n",handle);
+171    /*if(handle == -1) 
+172        return -1;*/
+173 
+174     //2. 猜测 ====================应该是将 ssl 接口放在这里，用来传输数据
+175    
+176    for(;;)
+177    {
+178        if((nread = recv(sck,rbuf1,MAXBUF,0)) < 0)
+179        {
+180           printf("receive error\n");
+181        }
+182        else if(nread == 0)
+183        {
+184           printf("over\n");
+185           break;
+186        }
+187     //   printf("%s\n",rbuf1);
+188        if(write(handle,rbuf1,nread) != nread)
+189            printf("receive error from server!");
+190        if(write(STDOUT_FILENO,rbuf1,nread) != nread)
+191            printf("receive error from server!");
+192    }
+193        if(close(sck) < 0)
+194            printf("close error\n");
+195 }
+196 
+197 
+198 //上传文件
+199 int ftp_put(int sck,char *pUploadFileName_s)
+200 {
+201    //int c_sock;
+202    int handle = open(pUploadFileName_s,O_RDWR);
+203    int nread;
+204    if(handle == -1)
+205        return -1;
+206    //ftp_type(c_sock,"I");
+207 
+208    //3. 猜测 ====================应该是将 ssl 接口放在这里，用来传输数据
+209    for(;;)
+210    {
+211        if((nread = read(handle,rbuf1,MAXBUF)) < 0)
+212        {
+213             printf("read error!");
+214        }
+215        else if(nread == 0)
+216           break;
+217        if(write(STDOUT_FILENO,rbuf1,nread) != nread)
+218             printf("send error!");
+219        if(write(sck,rbuf1,nread) != nread)
+220             printf("send error!");
+221    }
+222    if(close(sck) < 0)
+223         printf("close error\n");
+224 }
+225 
+226 
+227 
+228 //各种参数的执行
+229 void cmd_tcp(int sockfd)
+230 {
+231     int maxfdp1,nread,nwrite,fd,replycode,tag=0,data_sock;
+232     int port;
+233     char *pathname;
+234     fd_set rset;                //可读文件描述符集合
+235     FD_ZERO(&rset);                //清空可读文件描述符集合
+236     maxfdp1 = sockfd + 1;        //最大套接字
+237 
+238     for(;;)
+239     {
+240         //1.将  标准输入加入 可读文件描述符集合
+241          FD_SET(STDIN_FILENO,&rset);
+242         //2.将  命令套接字   加入可读文件描述符集合
+243          FD_SET(sockfd,&rset);
+244 
+245         //3.监听读事件
+246          if(select(maxfdp1,&rset,NULL,NULL,NULL)<0)
+247          {
+248              printf("select error\n");
+249          }
+250          //4.判断标准输入是否有读事件
+251          if(FD_ISSET(STDIN_FILENO,&rset))
+252          {
+253              //5.清空读缓冲区 和 写缓冲区
+254               bzero(wbuf,MAXBUF);          //zero
+255               bzero(rbuf1,MAXBUF);
+256               
+257               if((nread = read(STDIN_FILENO,rbuf1,MAXBUF)) <0)
+258                    printf("read error from stdin\n");
+259               nwrite = nread + 5;
+260 
+261             //=======这里不懂，replycode  什么时候赋的值
+262 
+263             //6.命令套接字中  写入  用户名
+264               if(replycode == USERNAME) 
+265               {
+266                   sprintf(wbuf,"USER %s",rbuf1);
+267               
+268                  if(write(sockfd,wbuf,nwrite) != nwrite)
+269                  {
+270                      printf("write error\n");
+271                  }
+272                  //printf("%s\n",wbuf);
+273                  //memset(rbuf1,0,sizeof(rbuf1));
+274                  //memset(wbuf,0,sizeof(wbuf));
+275                  //printf("1:%s\n",wbuf);
+276               }
+277 
+278             //7.命令套接字中  写入  密码                
+279               if(replycode == PASSWORD)
+280               {
+281                    //printf("%s\n",rbuf1);
+282                    sprintf(wbuf,"PASS %s",rbuf1);
+283                    if(write(sockfd,wbuf,nwrite) != nwrite)
+284                       printf("write error\n");
+285                    //bzero(rbuf,sizeof(rbuf));
+286                    //printf("%s\n",wbuf);
+287                    //printf("2:%s\n",wbuf);
+288               }
+289               
+290               if(replycode == 550 || replycode == LOGIN || replycode == CLOSEDATA || replycode == PATHNAME || replycode == ACTIONOK)
+291               {
+292               if(strncmp(rbuf1,"pwd",3) == 0)
+293               {   
+294                      //printf("%s\n",rbuf1);
+295                      sprintf(wbuf,"%s","PWD\n");
+296                      write(sockfd,wbuf,4);
+297                      continue; 
+298                  }
+299                  if(strncmp(rbuf1,"quit",4) == 0)
+300                  {
+301                      sprintf(wbuf,"%s","QUIT\n");
+302                      write(sockfd,wbuf,5);
+303                      //close(sockfd);
+304                     if(close(sockfd) <0)
+305                        printf("close error\n");
+306                     break;
+307                  }
+308                  if(strncmp(rbuf1,"cwd",3) == 0)
+309                  {
+310                      //sprintf(wbuf,"%s","PASV\n");
+311                      sprintf(wbuf,"%s",rbuf1);
+312                      write(sockfd,wbuf,nread);
+313                      
+314                      //sprintf(wbuf1,"%s","CWD\n");
+315                      
+316                      continue;
+317                  }
+318                  
+319                  if(strncmp(rbuf1,"ls",2) == 0)
+320                  {
+321                      tag = 2;            //显示文件 标识符
+322                      //printf("%s\n",rbuf1);
+323                      sprintf(wbuf,"%s","PASV\n");
+324                      //printf("%s\n",wbuf);
+325                      write(sockfd,wbuf,5);
+326                      //read
+327                      //sprintf(wbuf1,"%s","LIST -al\n");
+328                      nwrite = 0;
+329                      //write(sockfd,wbuf1,nwrite);
+330                      //ftp_list(sockfd);
+331                      continue;    
+332                  }
+333                  //8.下载文件
+334                  if(strncmp(rbuf1,"get",3) == 0)
+335                  {
+336                      tag = 1;            //下载文件标识符
+337 
+338                      //被动传输模式    
+339                      sprintf(wbuf,"%s","PASV\n");                   
+340                      //printf("%s\n",s(rbuf1));
+341                      //char filename[100];
+342                      s(rbuf1,filename);
+343                      printf("%s\n",filename);
+344                      write(sockfd,wbuf,5);
+345                      continue;
+346                  }
+347                  
+348                  if(strncmp(rbuf1,"put",3) == 0)
+349                  {
+350                      tag = 3;            //上传文件标识符
+351                      sprintf(wbuf,"%s","PASV\n");
+352 
+353                     //把内容赋值给  读缓冲区
+354                      st(rbuf1,filename);
+355                      printf("%s\n",filename);
+356                      write(sockfd,wbuf,5);
+357                      continue;
+358                  }
+359               } 
+360                     /*if(close(sockfd) <0)
+361                        printf("close error\n");*/
+362          }
+363          if(FD_ISSET(sockfd,&rset))
+364          {
+365          //9.清空读缓冲区 和 写缓冲区
+366              bzero(rbuf,strlen(rbuf));
+367          //10.读套接字中的内容
+368              if((nread = recv(sockfd,rbuf,MAXBUF,0)) <0)
+369                   printf("recv error\n");
+370              else if(nread == 0)
+371                break;
+372 
+373            //比较
+374              if(strncmp(rbuf,"220",3) ==0 || strncmp(rbuf,"530",3)==0)
+375              {
+376                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+377                     printf("write error to stdout\n");*/
+378 
+379                  //链接字符串
+380                  strcat(rbuf,"your name:");
+381                 
+382                  //printf("%s\n",rbuf);
+383                  nread += 12;
+384                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+385                     printf("write error to stdout\n");*/
+386                  replycode = USERNAME;
+387              }
+388              if(strncmp(rbuf,"331",3) == 0)
+389              {
+390                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+391                     printf("write error to stdout\n")*/;
+392                 strcat(rbuf,"your password:");
+393                 nread += 16;
+394                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+395                     printf("write error to stdout\n");*/
+396                 replycode = PASSWORD;
+397              }
+398              if(strncmp(rbuf,"230",3) == 0)
+399              {
+400                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+401                     printf("write error to stdout\n");*/
+402                 replycode = LOGIN;
+403              }
+404              if(strncmp(rbuf,"257",3) == 0)
+405              {
+406                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+407                     printf("write error to stdout\n");*/
+408                 replycode = PATHNAME;  
+409              }
+410              if(strncmp(rbuf,"226",3) == 0)
+411              {
+412                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+413                     printf("write error to stdout\n");*/
+414                 replycode = CLOSEDATA;
+415              }
+416              if(strncmp(rbuf,"250",3) == 0)
+417              {
+418                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+419                     printf("write error to stdout\n");*/
+420                 replycode = ACTIONOK;
+421              }
+422              if(strncmp(rbuf,"550",3) == 0)
+423              {
+424                 replycode = 550;
+425              }
+426              /*if(strncmp(rbuf,"150",3) == 0)
+427              {
+428                 if(write(STDOUT_FILENO,rbuf,nread) != nread)
+429                     printf("write error to stdout\n");
+430              }*/    
+431              //fprintf(stderr,"%d\n",1);
+432              if(strncmp(rbuf,"227",3) == 0)
+433              {
+434                 //printf("%d\n",1);
+435                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+436                    printf("write error to stdout\n");*/
+437 
+438                 //获取服务器返回的 接收数据的端口，和地址
+439                 int port1 = strtosrv(rbuf);
+440                 printf("%d\n",port1);
+441                 printf("%s\n",host);
+442 
+443                 //创建新的传输数据的套接字?
+444                 //1. 猜测 ====================应该是将 ssl 接口放在这里，用来传输数据
+445                 data_sock = cliopen(host,port1);
+446         
+447 
+448 
+449 //bzero(rbuf,sizeof(rbuf));
+450                 //printf("%d\n",fd);
+451                 //if(strncmp(rbuf1,"ls",2) == 0)
+452                 if(tag == 2)
+453                 {
+454                    write(sockfd,"list\n",strlen("list\n"));
+455                    ftp_list(data_sock);
+456                    /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+457                        printf("write error to stdout\n");*/
+458                    
+459                 }
+460                 //else if(strncmp(rbuf1,"get",3) == 0)
+461                 else if(tag == 1)
+462                 {
+463                     //sprintf(wbuf,"%s","RETR\n");
+464                     //printf("%s\n",wbuf);
+465                     //int str = strlen(filename);
+466                     //printf("%d\n",str);
+467                     sprintf(wbuf,"RETR %s\n",filename);
+468                     printf("%s\n",wbuf);
+469                     //int p = 5 + str + 1;
+470 
+471                     //命令套接字中写入  下载文件命令
+472                     printf("%d\n",write(sockfd,wbuf,strlen(wbuf)));
+473                     //printf("%d\n",p);
+474 
+475                     //下载文件 
+476                     ftp_get(data_sock,filename);
+477                 }
+478                 else if(tag == 3)
+479                 {
+480 
+481                     // 上传文件
+482                     sprintf(wbuf,"STOR %s\n",filename);
+483                     printf("%s\n",wbuf);
+484                     write(sockfd,wbuf,strlen(wbuf));
+485                     ftp_put(data_sock,filename);
+486                 }
+487                 nwrite = 0;     
+488              }
+489              /*if(strncmp(rbuf,"150",3) == 0)
+490              {
+491                  if(write(STDOUT_FILENO,rbuf,nread) != nread)
+492                      printf("write error to stdout\n");
+493              }*/
+494              //printf("%s\n",rbuf);
+495              if(write(STDOUT_FILENO,rbuf,nread) != nread)
+496                  printf("write error to stdout\n");
+497              /*else 
+498                  printf("%d\n",-1);*/            
+499          }
+500     }
+501 }
