@@ -28,6 +28,7 @@ char	*host;		/* hostname or dotted-decimal string */
 char	*port;
 char	*rbuf, *rbuf1;		/* pointer that is malloc'ed */
 char	*wbuf, *wbuf1;		/* pointer that is malloc'ed */
+char filename[100];
 struct sockaddr_in	servaddr;
 
 int	cliopen(char *host, char *port);
@@ -231,7 +232,6 @@ cmd_tcp(int sockfd)
                     //被动传输模式    
                     sprintf(wbuf,"%s","PASV\n");                   
                     //printf("%s\n",s(rbuf1));
-                    char filename[100];
                     s(rbuf1,filename);
                     printf("%s\n",filename);
                     write(sockfd,wbuf,5);
