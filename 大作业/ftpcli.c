@@ -134,6 +134,7 @@ void
 cmd_tcp(int sockfd)
 {
 	int		maxfdp1, nread, nwrite, fd, replycode;
+	int 	tag=0;
 	char		host[16];
 	char		port[6];
 	fd_set		rset;
@@ -230,7 +231,7 @@ cmd_tcp(int sockfd)
                     //被动传输模式    
                     sprintf(wbuf,"%s","PASV\n");                   
                     //printf("%s\n",s(rbuf1));
-                    //char filename[100];
+                    char filename[100];
                     s(rbuf1,filename);
                     printf("%s\n",filename);
                     write(sockfd,wbuf,5);
