@@ -124,8 +124,8 @@ strtosrv(char *str, char *host, char *port)
 	sscanf(str,"%*[^(](%d,%d,%d,%d,%d,%d)",&addr[0],&addr[1],&addr[2],&addr[3],&addr[4],&addr[5]);
 	bzero(host,strlen(host));
 	sprintf(host,"%d.%d.%d.%d",addr[0],addr[1],addr[2],addr[3]);
-	int port = addr[4]*256 + addr[5];
-    return port;
+	port = addr[4]*256 + addr[5];
+
 }
 
 
@@ -253,86 +253,86 @@ cmd_tcp(int sockfd)
 
 			write(sockfd, rbuf, nread);
 		}
-	}
 	
-	/* data to read from socket */
-	if (FD_ISSET(sockfd, &rset)) {
-		if ( (nread = recv(sockfd, rbuf, MAXBUF, 0)) < 0)
-			printf("recv error\n");
-		else if (nread == 0)
-			break;
-		/* set replycode and wait for user's input */
-		if (strncmp(rbuf, "220", 3)==0 || strncmp(rbuf, "530", 3)==0)
-		{
-			strcat(rbuf,  "your name: ");
-			nread += 12;
-			replycode = USERNAME;
-		}
+	
+		/* data to read from socket */
+		if (FD_ISSET(sockfd, &rset)) {
+			if ( (nread = recv(sockfd, rbuf, MAXBUF, 0)) < 0)
+				printf("recv error\n");
+			else if (nread == 0)
+				break;
+			/* set replycode and wait for user's input */
+			if (strncmp(rbuf, "220", 3)==0 || strncmp(rbuf, "530", 3)==0)
+			{
+				strcat(rbuf,  "your name: ");
+				nread += 12;
+				replycode = USERNAME;
+			}
 
-		/*************************************************************
-		// 9. code here: handle other response coming from server
-		*************************************************************/
-		if(strncmp(rbuf,"331",3) == 0)
-       	{
-        /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-            printf("write error to stdout\n")*/;
-            strcat(rbuf,"your password:");
-            nread += 16;
+			/*************************************************************
+			// 9. code here: handle other response coming from server
+			*************************************************************/
+			if(strncmp(rbuf,"331",3) == 0)
+       		{
+        	/*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+            	printf("write error to stdout\n")*/;
+            	strcat(rbuf,"your password:");
+            	nread += 16;
             /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
                 printf("write error to stdout\n");*/
-            replycode = PASSWORD;
-        }
-        if(strncmp(rbuf,"230",3) == 0)
-        {
+	            replycode = PASSWORD;
+	        }
+  	    	if(strncmp(rbuf,"230",3) == 0)
+ 	       {
             /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
                 printf("write error to stdout\n");*/
-            replycode = LOGIN;
-        }
-        if(strncmp(rbuf,"257",3) == 0)
-        {
-            /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-            printf("write error to stdout\n");*/
-            replycode = PATHNAME;  
-        }
-        if(strncmp(rbuf,"226",3) == 0)
-        {
-            /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-                printf("write error to stdout\n");*/
-            replycode = CLOSEDATA;
-        }
-        if(strncmp(rbuf,"250",3) == 0)
-        {
-            /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-                printf("write error to stdout\n");*/
-            replycode = ACTIONOK;
-        }
-        if(strncmp(rbuf,"550",3) == 0)
-        {
-	        replycode = 550;
-        }
-        /*if(strncmp(rbuf,"150",3) == 0)
-        {
-            if(write(STDOUT_FILENO,rbuf,nread) != nread)
-                printf("write error to stdout\n");
-        }*/    
-        //fprintf(stderr,"%d\n",1);
-			/* open data connection*/
-		if (strncmp(rbuf, "227", 3) == 0) {
-			strtosrv(rbuf, host, port);
-			fd = cliopen(host, port);
-			write(sockfd, wbuf1, nwrite);
-			nwrite = 0;
+           		replycode = LOGIN;
+	        }
+	        if(strncmp(rbuf,"257",3) == 0)
+	        {
+    	        /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+        	    printf("write error to stdout\n");*/
+            	replycode = PATHNAME;  
+	        }
+    	    if(strncmp(rbuf,"226",3) == 0)
+        	{
+            	/*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+                	printf("write error to stdout\n");*/
+	            replycode = CLOSEDATA;
+    	    }
+        	if(strncmp(rbuf,"250",3) == 0)
+	        {
+    	        /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+        	        printf("write error to stdout\n");*/
+            	replycode = ACTIONOK;
+	        }
+    	    if(strncmp(rbuf,"550",3) == 0)
+        	{
+	        	replycode = 550;
+	        }
+    	    /*if(strncmp(rbuf,"150",3) == 0)
+        	{
+            	if(write(STDOUT_FILENO,rbuf,nread) != nread)
+                	printf("write error to stdout\n");
+	        }*/    
+    	    //fprintf(stderr,"%d\n",1);
+				/* open data connection*/
+			if (strncmp(rbuf, "227", 3) == 0) {
+				strtosrv(rbuf, host, port);
+				fd = cliopen(host, port);
+				write(sockfd, wbuf1, nwrite);
+				nwrite = 0;
+			}
+			/* start data transfer */
+			if (write(STDOUT_FILENO, rbuf, nread) != nread)
+			{
+				printf("write error to stdout\n");
+			}
 		}
-		/* start data transfer */
-		if (write(STDOUT_FILENO, rbuf, nread) != nread)
-		{
-			printf("write error to stdout\n");
+		if (close(sockfd) < 0){
+			printf("close error\n");
 		}
 	}
-	if (close(sockfd) < 0){
-		printf("close error\n");
-	}
-
 }
 
 /* Read and write as data transfer connection */
@@ -364,7 +364,7 @@ ftp_get(int sck, char *pDownloadFileName_s)
 	/*************************************************************
 	// 10. code here: 
 	*************************************************************/
-	int handle = open(pDownloadFileName,O_WRONLY | O_CREAT | O_TRUNC, S_IREAD| S_IWRITE);
+	int handle = open(pDownloadFileName_s,O_WRONLY | O_CREAT | O_TRUNC, S_IREAD| S_IWRITE);
     int nread;
     printf("%d\n",handle);
     /*if(handle == -1) 
