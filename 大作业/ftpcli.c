@@ -149,6 +149,7 @@ cmd_tcp(int sockfd)
 		FD_SET(STDIN_FILENO, &rset);
 		FD_SET(sockfd, &rset);
 
+		printf("maxfdp1 is %d",maxfdp1);
 		if (select(maxfdp1, &rset, NULL, NULL, NULL) < 0)
 			printf("select error\n");
 			
