@@ -25,21 +25,20 @@
 
 /* DefinE global variables */
 char	*host;		/* hostname or dotted-decimal string */
-char	*port;
+int port;
 char	*rbuf, *rbuf1;		/* pointer that is malloc'ed */
 char	*wbuf, *wbuf1;		/* pointer that is malloc'ed */
 char filename[100];
 struct sockaddr_in	servaddr;
 
-int	cliopen(char *host, char *port);
-void	strtosrv(char *str, char *host, char *port);
+int	cliopen(char *host, int port);
+int	strtosrv(char *str, char *host, int port);
 void	cmd_tcp(int sockfd);
 void	ftp_list(int sockfd);
 int	ftp_get(int sck, char *pDownloadFileName_s);
 int	ftp_put (int sck, char *pUploadFileName_s);
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	int	fd;
 
@@ -52,7 +51,7 @@ main(int argc, char *argv[])
 	host = argv[1];
 	// test case: 123.206.33.80 	ilinkai.cn
 
-	port = "21";
+	port = 21;
 
 	/*****************************************************************
 	//1. code here: Allocate the read and write buffers before open().
@@ -74,7 +73,7 @@ main(int argc, char *argv[])
 
 /* Establish a TCP connection from client to server */
 int
-cliopen(char *host, char *port)
+cliopen(char *host, int port)
 {
 	int control_sock;
     //1.FTP 自己的传输地址结构体
@@ -112,8 +111,8 @@ cliopen(char *host, char *port)
    Compute server's port by a pair of integers and store it in char *port
    Get server's IP address and store it in char *host
 */
-void
-strtosrv(char *str, char *host, char *port)
+int
+strtosrv(char *str, char *host, int port)
 {
 	/*************************************************************
 	//3. code here to compute the port number for data connection
@@ -127,6 +126,7 @@ strtosrv(char *str, char *host, char *port)
 	sprintf(host,"%d.%d.%d.%d",addr[0],addr[1],addr[2],addr[3]);
 	port = addr[4]*256 + addr[5];
 
+	return port;
 }
 
 
@@ -137,7 +137,7 @@ cmd_tcp(int sockfd)
 	int		maxfdp1, nread, nwrite, fd, replycode;
 	int 	tag=0;
 	char		host[16];
-	char		port[6];
+	int		port=0;
 	fd_set		rset;
 
 	FD_ZERO(&rset);
@@ -265,6 +265,7 @@ cmd_tcp(int sockfd)
 			{
 				strcat(rbuf,  "your name: ");
 				nread += 12;
+				//printf("%d",nread);
 				replycode = USERNAME;
 			}
 
@@ -317,8 +318,8 @@ cmd_tcp(int sockfd)
     	    //fprintf(stderr,"%d\n",1);
 				/* open data connection*/
 			if (strncmp(rbuf, "227", 3) == 0) {
-				strtosrv(rbuf, host, port);
-				fd = cliopen(host, port);
+				int newport = strtosrv(rbuf, host, port);
+				fd = cliopen(host, newport);
 				write(sockfd, wbuf1, nwrite);
 				nwrite = 0;
 			}
