@@ -126,6 +126,7 @@ strtosrv(char *str, char *host, int port)
 	sprintf(host,"%d.%d.%d.%d",addr[0],addr[1],addr[2],addr[3]);
 	port = addr[4]*256 + addr[5];
 
+	printf("now port is %d", port);
 	return port;
 }
 
