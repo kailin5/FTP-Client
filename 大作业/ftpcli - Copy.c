@@ -32,7 +32,7 @@ char filename[100];
 struct sockaddr_in	servaddr;
 
 int	cliopen(char *host, int port);
-int	strtosrv(char *str, char *host, int port);
+int	strtosrv(char *str);
 void	cmd_tcp(int sockfd);
 void	ftp_list(int sockfd);
 int	ftp_get(int sck, char *pDownloadFileName_s);
@@ -112,7 +112,7 @@ cliopen(char *host, int port)
    Get server's IP address and store it in char *host
 */
 int
-strtosrv(char *str, char *host, int port)
+strtosrv(char *str)
 {
 	/*************************************************************
 	//3. code here to compute the port number for data connection
@@ -124,10 +124,9 @@ strtosrv(char *str, char *host, int port)
 	sscanf(str,"%*[^(](%d,%d,%d,%d,%d,%d)",&addr[0],&addr[1],&addr[2],&addr[3],&addr[4],&addr[5]);
 	bzero(host,strlen(host));
 	sprintf(host,"%d.%d.%d.%d",addr[0],addr[1],addr[2],addr[3]);
-	port = addr[4]*256 + addr[5];
-
-	printf("now port is %d", port);
-	return port;
+	int calport = addr[4]*256 + addr[5];
+	printf("%d",calport);
+	return calport;
 }
 
 
@@ -135,9 +134,10 @@ strtosrv(char *str, char *host, int port)
 void
 cmd_tcp(int sockfd)
 {
-	int		maxfdp1, nread, nwrite, fd, replycode;
+	int		maxfdp1, nread, nwrite, fd, replycode,data_sock;
 	int 	tag=0;
-	char		host[16];
+	char	host[16];
+	//char 	*pathname;
 	int		port=0;
 	fd_set		rset;
 
@@ -154,6 +154,11 @@ cmd_tcp(int sockfd)
 			
 		/* data to read on stdin */
 		if (FD_ISSET(STDIN_FILENO, &rset)) {
+
+			//清空读缓冲区 和 写缓冲区
+            bzero(wbuf,MAXBUF);          //zero
+            bzero(rbuf1,MAXBUF);
+
 			if ( (nread = read(STDIN_FILENO, rbuf, MAXBUF)) < 0)
 				printf("read error from stdin\n");
 			nwrite = nread+5;
@@ -171,7 +176,7 @@ cmd_tcp(int sockfd)
 			if(replycode == PASSWORD)
 		    {
                 //printf("%s\n",rbuf1);
-                sprintf(wbuf,"PASS %s",rbuf1);
+                sprintf(wbuf,"PASS %s",rbuf);
                 if(write(sockfd,wbuf,nwrite) != nwrite)
             	    printf("write error\n");
                 //bzero(rbuf,sizeof(rbuf));
@@ -194,14 +199,16 @@ cmd_tcp(int sockfd)
 				/*************************************************************
 				// 5. code here: cd - change working directory/
 				*************************************************************/
-				if(strncmp(rbuf1,"pwd",3) == 0)
-               	{   
-                    //printf("%s\n",rbuf1);
-                    sprintf(wbuf,"%s","PWD\n");
-                    write(sockfd,wbuf,4);
-                    continue; 
-                }
-
+				if(strncmp(rbuf,"cd",2) == 0)
+                 {
+                     //sprintf(wbuf,"%s","PASV\n");
+                     sprintf(wbuf,"%s","CWD");
+                     write(sockfd,wbuf,nread);
+                     
+                     //sprintf(wbuf1,"%s","CWD\n");
+                     
+                     continue;
+                 }
 
 				/* pwd -  print working directory */
 				if (strncmp(rbuf, "pwd", 3) == 0) 
@@ -214,7 +221,7 @@ cmd_tcp(int sockfd)
 				/*************************************************************
 				// 6. code here: quit - quit from ftp server
 				*************************************************************/
-                if(strncmp(rbuf1,"quit",4) == 0)
+                if(strncmp(rbuf,"quit",4) == 0)
                 {
                     sprintf(wbuf,"%s","QUIT\n");
                     write(sockfd,wbuf,5);
@@ -251,7 +258,7 @@ cmd_tcp(int sockfd)
                 }
             } 
 
-			write(sockfd, rbuf, nread);
+			// write(sockfd, rbuf, nread);
 		}
 	
 	
@@ -277,7 +284,7 @@ cmd_tcp(int sockfd)
        		{
         	/*if(write(STDOUT_FILENO,rbuf,nread) != nread)
             	printf("write error to stdout\n")*/;
-            	strcat(rbuf,"your password:");
+            	strcat(rbuf,"your password: ");
             	nread += 16;
             /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
                 printf("write error to stdout\n");*/
@@ -319,10 +326,55 @@ cmd_tcp(int sockfd)
     	    //fprintf(stderr,"%d\n",1);
 				/* open data connection*/
 			if (strncmp(rbuf, "227", 3) == 0) {
-				int newport = strtosrv(rbuf, host, port);
-				fd = cliopen(host, newport);
-				write(sockfd, wbuf1, nwrite);
-				nwrite = 0;
+				int port1 = strtosrv(rbuf);
+                printf("%d\n",port1);
+                printf("%s\n",host);
+
+                //创建新的传输数据的套接字?
+                //1. 猜测 ====================应该是将 ssl 接口放在这里，用来传输数据
+                data_sock = cliopen(host,port1);
+        
+
+
+//bzero(rbuf,sizeof(rbuf));
+                //printf("%d\n",fd);
+                //if(strncmp(rbuf1,"ls",2) == 0)
+                if(tag == 2)
+                {
+                   write(sockfd,"list\n",strlen("list\n"));
+                   ftp_list(data_sock);
+                   /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+                       printf("write error to stdout\n");*/
+                   
+                }
+                //else if(strncmp(rbuf1,"get",3) == 0)
+                else if(tag == 1)
+                {
+                    //sprintf(wbuf,"%s","RETR\n");
+                    //printf("%s\n",wbuf);
+                    //int str = strlen(filename);
+                    //printf("%d\n",str);
+                    sprintf(wbuf,"RETR %s\n",filename);
+                    printf("%s\n",wbuf);
+                    //int p = 5 + str + 1;
+
+                    //命令套接字中写入  下载文件命令
+                    printf("%d\n",write(sockfd,wbuf,strlen(wbuf)));
+                    //printf("%d\n",p);
+
+                    //下载文件 
+                    ftp_get(data_sock,filename);
+                }
+                else if(tag == 3)
+                {
+
+                    // 上传文件
+                    sprintf(wbuf,"STOR %s\n",filename);
+                    printf("%s\n",wbuf);
+                    write(sockfd,wbuf,strlen(wbuf));
+                    ftp_put(data_sock,filename);
+                }
+                nwrite = 0;
 			}
 			/* start data transfer */
 			if (write(STDOUT_FILENO, rbuf, nread) != nread)
@@ -330,9 +382,11 @@ cmd_tcp(int sockfd)
 				printf("write error to stdout\n");
 			}
 		}
-		if (close(sockfd) < 0){
-			printf("close error\n");
-		}
+		
+	}
+	if (close(sockfd) < 0)
+	{
+		printf("close error\n");
 	}
 }
 
