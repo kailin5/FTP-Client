@@ -137,7 +137,8 @@ cmd_tcp(int sockfd)
 {
 	int		maxfdp1, nread, nwrite, fd, replycode;
 	int 	tag=0;
-	char		host[16];
+	char	host[16];
+	//char 	*pathname;
 	int		port=0;
 	fd_set		rset;
 
@@ -149,12 +150,16 @@ cmd_tcp(int sockfd)
 		FD_SET(STDIN_FILENO, &rset);
 		FD_SET(sockfd, &rset);
 
-		printf("maxfdp1 is %d",maxfdp1);
 		if (select(maxfdp1, &rset, NULL, NULL, NULL) < 0)
 			printf("select error\n");
 			
 		/* data to read on stdin */
 		if (FD_ISSET(STDIN_FILENO, &rset)) {
+
+			//清空读缓冲区 和 写缓冲区
+            bzero(wbuf,MAXBUF);          //zero
+            bzero(rbuf1,MAXBUF);
+
 			if ( (nread = read(STDIN_FILENO, rbuf, MAXBUF)) < 0)
 				printf("read error from stdin\n");
 			nwrite = nread+5;
@@ -171,7 +176,7 @@ cmd_tcp(int sockfd)
 			 *************************************************************/
 			if(replycode == PASSWORD)
 		    {
-                //printf("%s\n",rbuf1);
+                printf("%s\n",rbuf1);
                 sprintf(wbuf,"PASS %s",rbuf1);
                 if(write(sockfd,wbuf,nwrite) != nwrite)
             	    printf("write error\n");
@@ -278,7 +283,7 @@ cmd_tcp(int sockfd)
        		{
         	/*if(write(STDOUT_FILENO,rbuf,nread) != nread)
             	printf("write error to stdout\n")*/;
-            	strcat(rbuf,"your password:");
+            	strcat(rbuf,"your password: ");
             	nread += 16;
             /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
                 printf("write error to stdout\n");*/
@@ -331,9 +336,11 @@ cmd_tcp(int sockfd)
 				printf("write error to stdout\n");
 			}
 		}
-		if (close(sockfd) < 0){
-			printf("close error\n");
-		}
+		
+	}
+	if (close(sockfd) < 0)
+	{
+		printf("close error\n");
 	}
 }
 
