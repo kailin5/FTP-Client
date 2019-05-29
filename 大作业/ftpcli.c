@@ -176,7 +176,7 @@ cmd_tcp(int sockfd)
 			 *************************************************************/
 			if(replycode == PASSWORD)
 		    {
-                printf("%s\n",rbuf1);
+                //printf("%s\n",rbuf1);
                 sprintf(wbuf,"PASS %s",rbuf1);
                 if(write(sockfd,wbuf,nwrite) != nwrite)
             	    printf("write error\n");
