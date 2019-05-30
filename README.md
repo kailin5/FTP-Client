@@ -1,16 +1,14 @@
 # FTP-Client
 This is the repo of FTP client of Internet Applications
 
-# Reset password to *
-https://zhidao.baidu.com/question/166454029.html
-
 # functions to be added:
-delete function hidden password
+delete function, rename function
 extended function
 
 # Finished work to date
 1: Scucessfully connected, wireshark can have the packet
 2: Overall framework has finished, minor bugs to be fixed
+3: username, password, ls, cd, pwd, put, get, put function has been implemented
 
 # How to use?
 	2 XShell opened.
