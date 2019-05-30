@@ -44,7 +44,28 @@ void  ftp_list(int sockfd);
 int ftp_get(int sck,char *pDownloadFileName);
 int ftp_put(int sck,char *pUploadFileName_s);
 void cmd_tcp(int sockfd);                    
-
+#define ECHOFLAGS (ECHO | ECHOE | ECHOK | ECHONL)
+//函数set_disp_mode用于控制是否开启输入回显功能
+//如果option为0，则关闭回显，为1则打开回显
+int set_disp_mode(int fd,int option)
+{
+   int err;
+   struct termios term;
+   if(tcgetattr(fd,&term)==-1){
+     perror("Cannot get the attribution of the terminal");
+     return 1;
+   }
+   if(option)
+        term.c_lflag|=ECHOFLAGS;
+   else
+        term.c_lflag &=~ECHOFLAGS;
+   err=tcsetattr(fd,TCSAFLUSH,&term);
+   if(err==-1 && err==EINTR){
+        perror("Cannot set the attribution of the terminal");
+        return 1;
+   }
+   return 0;
+}
 
 int main(int argc,char *argv[])
 {
@@ -323,6 +344,9 @@ void cmd_tcp(int sockfd)
               bzero(wbuf,MAXBUF);          //zero
               bzero(rbuf1,MAXBUF);
               
+              
+              //set_disp_mode(STDIN_FILENO,1);  
+            
               if((nread = read(STDIN_FILENO,rbuf1,MAXBUF)) <0)
                    printf("read error from stdin\n");
               nwrite = nread + 5;
@@ -386,6 +410,7 @@ void cmd_tcp(int sockfd)
                      sscanf(rbuf1,"%s %s", tmp, dirname);
                      //printf("%s\n", dirname);
                      int dirnameLen= strlen(dirname);
+                     //if not, the final character will be the \000
                      dirname[dirnameLen] = '\n';
                      sprintf(wbuf,"CWD %s",dirname);
                      write(sockfd,wbuf,nread+1);
@@ -473,8 +498,7 @@ void cmd_tcp(int sockfd)
                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
                     printf("write error to stdout\n")*/;
                 
-                strcat(rbuf,"your password:");
-
+                strcat(rbuf,"your password:\n");
                 nread += 16;
                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
                     printf("write error to stdout\n");*/
@@ -579,6 +603,14 @@ void cmd_tcp(int sockfd)
              //printf("%s\n",rbuf);
              if(write(STDOUT_FILENO,rbuf,nread) != nread)
                  printf("write error to stdout\n");
+              if (replycode == PASSWORD)
+              {
+                set_disp_mode(STDIN_FILENO,0);  
+              }
+              else{
+                set_disp_mode(STDIN_FILENO,1);  
+              }
+
              /*else 
                  printf("%d\n",-1);*/            
          }
