@@ -10,6 +10,8 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/fcntl.h>
+#include <termios.h>  /* Used to not display password directly, instead using *****   */
+
 
 /* define macros*/
 #define MAXBUF             1024        
@@ -33,6 +35,9 @@ char dirname[100];
 char *host;                            /* hostname or dotted-decimal string */
 struct sockaddr_in servaddr;   
 
+
+int mygetch();
+int getpasswd(char *passwd, int size);
 int cliopen(char *host,int port);
 int strtosrv(char *str);
 void  ftp_list(int sockfd);
@@ -70,6 +75,46 @@ int main(int argc,char *argv[])
     cmd_tcp(fd);
     exit(0);
 }
+
+int mygetch()
+{
+    struct termios oldt, newt;
+    int ch;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    ch = getchar();
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    return ch;
+}
+
+// password to * method 
+int getpasswd(char *passwd, int size)
+{
+    int c, n = 0;
+    do
+    {
+        c = mygetch();
+        if (c != '\n' && c != 'r' && c != 127)
+        {
+            passwd[n] = c;
+            printf("*");
+            n++;
+        }
+        else if ((c != '\n' | c != '\r') && c == 127)//判断是否是回车或则退格
+        {
+            if (n > 0)
+            {
+                n--;
+                printf("\b \b");//输出退格
+            }
+        }
+    }while (c != '\n' && c != '\r' && n < (size - 1));
+    passwd[n] = '\0';//消除一个多余的回车
+    return n;
+}
+
 
 /* Establish a TCP connection from client to server */
 int cliopen(char *host,int port)
@@ -247,8 +292,32 @@ void cmd_tcp(int sockfd)
          {
              printf("select error\n");
          }
+
+         /*
+          //4.判断是否应该输入密码
+         if(replycode  == PASSWORD )
+         {
+             //5.清空读缓冲区 和 写缓冲区
+              bzero(wbuf,MAXBUF);          //zero
+              bzero(rbuf1,MAXBUF);
+              
+              //getpasswd(rbuf1, 100);
+
+               //formal input              
+              if((nread = read(STDIN_FILENO,rbuf1,MAXBUF)) <0)
+                   printf("read error from stdin\n");
+              nwrite = nread + 5;
+              
+
+              sprintf(wbuf,"PASS %s",rbuf1);
+                   if(write(sockfd,wbuf,nwrite) != nwrite)
+                      printf("write error\n");
+          }
+          */  
+
          //4.判断标准输入是否有读事件
          if(FD_ISSET(STDIN_FILENO,&rset))
+          // && replycode  != PASSWORD
          {
              //5.清空读缓冲区 和 写缓冲区
               bzero(wbuf,MAXBUF);          //zero
@@ -315,7 +384,9 @@ void cmd_tcp(int sockfd)
                  {
                      //sprintf(wbuf,"%s","PASV\n");
                      sscanf(rbuf1,"%s %s", tmp, dirname);
-                     printf("%s\n", dirname);
+                     //printf("%s\n", dirname);
+                     int dirnameLen= strlen(dirname);
+                     dirname[dirnameLen] = '\n';
                      sprintf(wbuf,"CWD %s",dirname);
                      write(sockfd,wbuf,nread+1);
                      
@@ -388,6 +459,10 @@ void cmd_tcp(int sockfd)
                     printf("write error to stdout\n");*/
 
                  //链接字符串
+
+
+                 //printf("your name:");
+                 //getpasswd(rbuf, 20);
                  strcat(rbuf,"your name:");
                 
                  nread += 12;
@@ -397,7 +472,9 @@ void cmd_tcp(int sockfd)
              {
                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
                     printf("write error to stdout\n")*/;
+                
                 strcat(rbuf,"your password:");
+
                 nread += 16;
                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
                     printf("write error to stdout\n");*/

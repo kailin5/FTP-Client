@@ -56,7 +56,6 @@ main(int argc, char *argv[])
 	exit(0);
 }
 
-
 /* Establish a TCP connection from client to server */
 int
 cliopen(char *host, char *port)

@@ -4,8 +4,9 @@ This is the repo of FTP client of Internet Applications
 # Reset password to *
 https://zhidao.baidu.com/question/166454029.html
 
-# Bug to be fixed:
-The user name will be sent to ftp server twice, second time is not include command USER uftp
+# functions to be added:
+delete function hidden password
+extended function
 
 # Finished work to date
 1: Scucessfully connected, wireshark can have the packet
