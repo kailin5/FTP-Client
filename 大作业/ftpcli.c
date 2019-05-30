@@ -470,22 +470,22 @@ void cmd_tcp(int sockfd)
                  //to be added binary mode and ascii mode
                 if(strncmp(rbuf1,"binary",6) == 0)
                  {
-                     sprintf(wbuf,"%s","TYPE I\n");
+                     sprintf(wbuf,"TYPE %s","I\n");
 
                     //把内容赋值给  读缓冲区
                      st(rbuf1,filename);
                      printf("%s\n",filename);
-                     write(sockfd,wbuf,5);
+                     write(sockfd,wbuf,7);
                      continue;
                  }
                  if(strncmp(rbuf1,"ascii",5) == 0)
                  {
-                     sprintf(wbuf,"%s","TYPE A\n");
+                     sprintf(wbuf,"TYPE %s","A\n");
 
                     //把内容赋值给  读缓冲区
                      st(rbuf1,filename);
                      printf("%s\n",filename);
-                     write(sockfd,wbuf,5);
+                     write(sockfd,wbuf,7);
                      continue;
                  }
 
