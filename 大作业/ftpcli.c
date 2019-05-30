@@ -30,7 +30,8 @@
 
 /* DefinE global variables */
 char *rbuf,*rbuf1,*wbuf,*wbuf1;           /* pointer that is malloc'ed */
-char filename[100]; 
+char filename[100];
+char newfilename[100]; 
 char tmp[100];
 char dirname[100];            
 char *host;                            /* hostname or dotted-decimal string */
@@ -99,6 +100,7 @@ int main(int argc,char *argv[])
     exit(0);
 }
 
+/* 如果不用替换* 暂时不用这个
 int mygetch()
 {
     struct termios oldt, newt;
@@ -137,7 +139,7 @@ int getpasswd(char *passwd, int size)
     passwd[n] = '\0';//消除一个多余的回车
     return n;
 }
-
+*/
 
 /* Establish a TCP connection from client to server */
 int cliopen(char *host,int port)
@@ -298,6 +300,7 @@ void cmd_tcp(int sockfd)
 {
     int maxfdp1,nread,nwrite,fd,replycode,tag=0,data_sock;
     int port;
+    int newfilenameLen;
     char *pathname;
     fd_set rset;                
     FD_ZERO(&rset);                
@@ -314,30 +317,7 @@ void cmd_tcp(int sockfd)
          if(select(maxfdp1,&rset,NULL,NULL,NULL)<0)
          {
              printf("select error\n");
-         }
-
-         /*
-          //4.判断是否应该输入密码
-         if(replycode  == PASSWORD )
-         {
-             //5.清空读缓冲区 和 写缓冲区
-              bzero(wbuf,MAXBUF);          //zero
-              bzero(rbuf1,MAXBUF);
-              
-              //getpasswd(rbuf1, 100);
-
-               //formal input              
-              if((nread = read(STDIN_FILENO,rbuf1,MAXBUF)) <0)
-                   printf("read error from stdin\n");
-              nwrite = nread + 5;
-              
-
-              sprintf(wbuf,"PASS %s",rbuf1);
-                   if(write(sockfd,wbuf,nwrite) != nwrite)
-                      printf("write error\n");
-          }
-          */  
-
+         } 
          //4.判断标准输入是否有读事件
          if(FD_ISSET(STDIN_FILENO,&rset))
           // && replycode  != PASSWORD
@@ -421,6 +401,39 @@ void cmd_tcp(int sockfd)
                      
                      continue;
                  }
+
+                 // mkdir function
+                 if(strncmp(rbuf1,"mkdir",5) == 0)
+                 {
+                     //sprintf(wbuf,"%s","PASV\n");
+                     sscanf(rbuf1,"%s %s", tmp, dirname);
+                     //printf("%s\n", dirname);
+                     int dirnameLen= strlen(dirname);
+                     //if not, the final character will be the \000
+                     dirname[dirnameLen] = '\n';
+                     sprintf(wbuf,"MKD %s",dirname);
+                     write(sockfd,wbuf,nread+1);
+                     //sprintf(wbuf1,"%s","CWD\n");
+                     
+                     continue;
+                 }
+
+                 if(strncmp(rbuf1,"delete",6) == 0)
+                 {
+                     //sprintf(wbuf,"%s","PASV\n");
+                     sscanf(rbuf1,"%s %s", tmp, filename);
+                     //printf("%s\n", dirname);
+                     int filenameLen= strlen(filename);
+                     //if not, the final character will be the \000
+                     filename[filenameLen] = '\n';
+                     sprintf(wbuf,"DELE %s",filename);
+                     write(sockfd,wbuf,nread+1);
+                     //sprintf(wbuf1,"%s","CWD\n");
+                     
+                     continue;
+                 }
+
+
                  /* ls - list files and directories*/
                  if(strncmp(rbuf1,"ls",2) == 0)
                  {
@@ -467,7 +480,7 @@ void cmd_tcp(int sockfd)
                      continue;
                  }
 
-                 //to be added binary mode and ascii mode
+                 //binary mode and ascii mode
                 if(strncmp(rbuf1,"binary",6) == 0)
                  {
                      sprintf(wbuf,"TYPE %s","I\n");
@@ -488,6 +501,28 @@ void cmd_tcp(int sockfd)
                      write(sockfd,wbuf,7);
                      continue;
                  }
+
+                 if(strncmp(rbuf1,"rename",6) == 0)
+                 {
+                     //sprintf(wbuf,"%s","PASV\n");
+                     sscanf(rbuf1,"%s %s %s", tmp, filename,newfilename);
+                     //printf("%s\n", dirname);
+                     int filenameLen= strlen(filename);
+                     newfilenameLen = strlen(newfilename);
+                     //if not, the final character will be the \000
+                     filename[filenameLen] = '\n';
+                     newfilename[newfilenameLen] = '\n';
+                     sprintf(wbuf,"RNFR %s",filename);
+                     write(sockfd,wbuf,filenameLen+6);
+
+                     
+
+                     nwrite = 0;
+                     //sprintf(wbuf1,"%s","CWD\n");
+                     
+                     continue;
+                 }
+
 
 
               } 
@@ -558,6 +593,16 @@ void cmd_tcp(int sockfd)
              {
                 replycode = 550;
              }
+
+             // Ready to rename
+             if(strncmp(rbuf,"350",3) == 0)
+             {
+                bzero(wbuf,strlen(wbuf));
+                sprintf(wbuf,"RNTO %s",newfilename);
+                write(sockfd,wbuf,newfilenameLen+6);
+                replycode = 350;
+             }
+             
              /*if(strncmp(rbuf,"150",3) == 0)
              {
                 if(write(STDOUT_FILENO,rbuf,nread) != nread)
@@ -629,6 +674,8 @@ void cmd_tcp(int sockfd)
              //printf("%s\n",rbuf);
              if(write(STDOUT_FILENO,rbuf,nread) != nread)
                  printf("write error to stdout\n");
+
+              //如果该输密码了，让输入不可见
               if (replycode == PASSWORD)
               {
                 set_disp_mode(STDIN_FILENO,0);  

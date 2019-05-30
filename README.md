@@ -1,16 +1,26 @@
 # FTP-Client
 This is the repo of FTP client of Internet Applications
 
+# Reference website to be looked
+FTP command
+https://en.wikipedia.org/wiki/List_of_FTP_commands
+http://www.nsftools.com/tips/RawFTP.htm
+
+
+
+
 # functions to be added:
-delete, rename, mkdir,ascii, binary
+
 ## extended function
 limitiing download rate
 https://blog.csdn.net/wk_bjut_edu_cn/article/details/86506846
 
+
+
 # Finished work to date
 1: Scucessfully connected, wireshark can have the packet
 2: Overall framework has finished, minor bugs to be fixed
-3: username, password, ls, cd, pwd, put, get, put function has been implemented
+3: username, password, ls, cd, pwd, put, get, put, binary, ascii, delete, rename, mkdir function has been implemented
 
 # How to use?
 	2 XShell opened.
