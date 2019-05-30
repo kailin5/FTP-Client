@@ -11,6 +11,7 @@
 #include <sys/ioctl.h>
 #include <sys/fcntl.h>
 #include <termios.h>  /* Used to not display password directly, instead using *****   */
+#define ECHOFLAGS (ECHO | ECHOE | ECHOK | ECHONL)
 
 
 /* define macros*/
@@ -44,7 +45,7 @@ void  ftp_list(int sockfd);
 int ftp_get(int sck,char *pDownloadFileName);
 int ftp_put(int sck,char *pUploadFileName_s);
 void cmd_tcp(int sockfd);                    
-#define ECHOFLAGS (ECHO | ECHOE | ECHOK | ECHONL)
+
 //函数set_disp_mode用于控制是否开启输入回显功能
 //如果option为0，则关闭回显，为1则打开回显
 int set_disp_mode(int fd,int option)
