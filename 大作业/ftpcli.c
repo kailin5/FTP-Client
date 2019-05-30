@@ -39,6 +39,7 @@ struct sockaddr_in servaddr;
 
 int mygetch();
 int getpasswd(char *passwd, int size);
+int set_disp_mode(int fd,int option);
 int cliopen(char *host,int port);
 int strtosrv(char *str);
 void  ftp_list(int sockfd);
@@ -465,6 +466,30 @@ void cmd_tcp(int sockfd)
                      write(sockfd,wbuf,5);
                      continue;
                  }
+
+                 //to be added binary mode and ascii mode
+                if(strncmp(rbuf1,"binary",6) == 0)
+                 {
+                     sprintf(wbuf,"%s","TYPE I\n");
+
+                    //把内容赋值给  读缓冲区
+                     st(rbuf1,filename);
+                     printf("%s\n",filename);
+                     write(sockfd,wbuf,5);
+                     continue;
+                 }
+                 if(strncmp(rbuf1,"ascii",5) == 0)
+                 {
+                     sprintf(wbuf,"%s","TYPE A\n");
+
+                    //把内容赋值给  读缓冲区
+                     st(rbuf1,filename);
+                     printf("%s\n",filename);
+                     write(sockfd,wbuf,5);
+                     continue;
+                 }
+
+
               } 
                     /*if(close(sockfd) <0)
                        printf("close error\n");*/

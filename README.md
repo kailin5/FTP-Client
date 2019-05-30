@@ -2,8 +2,10 @@
 This is the repo of FTP client of Internet Applications
 
 # functions to be added:
-delete function, rename function
-extended function
+delete, rename, mkdir,ascii, binary
+## extended function
+limitiing download rate
+https://blog.csdn.net/wk_bjut_edu_cn/article/details/86506846
 
 # Finished work to date
 1: Scucessfully connected, wireshark can have the packet
