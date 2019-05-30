@@ -14,6 +14,7 @@
 #define MAXBUF	1024
 #define STDIN_FILENO	0
 #define STDOUT_FILENO	1
+
 /* define FTP reply code */
 #define USERNAME	220
 #define PASSWORD	331
