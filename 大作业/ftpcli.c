@@ -11,6 +11,21 @@
 #include <sys/ioctl.h>
 #include <sys/fcntl.h>
 #include <termios.h>  /* Used to not display password directly, instead using *****   */
+#include<sys/time.h> // used to limit the transmission rate, get current time
+//int gettimeofday(struct  timeval*tv,struct  timezone *tz )
+//int nanosleep(const struct timespec *req, struct timespec *rem);
+/*
+struct  timeval{
+       long  tv_sec;
+       long  tv_usec;
+};
+
+struct  timezone{
+  int tz_minuteswest;
+  int tz_dsttime;
+};
+*/
+
 #define ECHOFLAGS (ECHO | ECHOE | ECHOK | ECHONL)
 
 
@@ -38,8 +53,8 @@ char *host;                            /* hostname or dotted-decimal string */
 struct sockaddr_in servaddr;   
 
 
-int mygetch();
-int getpasswd(char *passwd, int size);
+//int mygetch();
+//int getpasswd(char *passwd, int size);
 int set_disp_mode(int fd,int option);
 int cliopen(char *host,int port);
 int strtosrv(char *str);
@@ -236,6 +251,15 @@ void ftp_list(int sockfd)
         printf("close error\n");
 }
 
+/*
+void checkSpeed(){
+  int stopTime = 1;
+  if (curSpeed>SPEEDLIMIT){
+
+  }
+}
+*/
+
 /* download file from ftp server */
 int ftp_get(int sck,char *pDownloadFileName)
 {
@@ -248,8 +272,9 @@ int ftp_get(int sck,char *pDownloadFileName)
    
    for(;;)
    {
+       //checkSpeed();
        if((nread = recv(sck,rbuf1,MAXBUF,0)) < 0)
-       {
+       {  
           printf("receive error\n");
        }
        else if(nread == 0)
@@ -257,11 +282,15 @@ int ftp_get(int sck,char *pDownloadFileName)
           printf("over\n");
           break;
        }
+       printf("nread is %d",nread);//1024,760 
     //   printf("%s\n",rbuf1);
        if(write(handle,rbuf1,nread) != nread)
            printf("receive error from server!");
+
+      /*  Not print file content to console
        if(write(STDOUT_FILENO,rbuf1,nread) != nread)
            printf("receive error from server!");
+      */
    }
        if(close(sck) < 0)
            printf("close error\n");
