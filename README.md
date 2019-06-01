@@ -21,6 +21,8 @@ https://blog.csdn.net/wk_bjut_edu_cn/article/details/86506846
 1: Scucessfully connected, wireshark can have the packet
 2: Overall framework has finished, minor bugs to be fixed
 3: username, password, ls, cd, pwd, put, get, put, binary, ascii, delete, rename, mkdir function has been implemented
+4: Handle unknown command (Eg: h,hk,asdf,1erasdf)
+5: Fix get function errror
 
 # How to use?
 	2 XShell opened.
