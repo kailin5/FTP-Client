@@ -314,7 +314,8 @@ int ftp_put(int sck,char *pUploadFileName_s)
    //int c_sock;
    int handle = open(pUploadFileName_s,O_RDWR);
    int nread;
-   printf("%d",handle);
+   printf("open 返回的值是 %d",handle);
+   //error open
    if(handle < 0)
        return -1;
    //ftp_type(c_sock,"I");
@@ -734,14 +735,6 @@ void cmd_tcp(int sockfd)
                     sprintf(wbuf,"STOR %s\n",filename);
                     printf("%s\n",wbuf);
                     write(sockfd,wbuf,strlen(wbuf));
-
-                    //9.清空读缓冲区 和 写缓冲区
-                    bzero(rbuf,strlen(rbuf));
-                      //10.读套接字中的内容
-
-                    if((nread = recv(sockfd,rbuf,MAXBUF,0)) <0)
-                        printf("recv error\n");
-
                     ftp_put(data_sock,filename);
                     
                 }
