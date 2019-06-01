@@ -503,7 +503,8 @@ void cmd_tcp(int sockfd)
                      //printf("%s\n",s(rbuf1));
                      //char filename[100];
                      s(rbuf1,filename);
-                     printf("%s\n",filename);
+                     
+                     //printf("%s\n",filename);
                      write(sockfd,wbuf,5);
                      continue;
                  }
@@ -517,7 +518,7 @@ void cmd_tcp(int sockfd)
 
                     //把内容赋值给  读缓冲区
                      st(rbuf1,filename);
-                     printf("%s\n",filename);
+                     //printf("%s\n",filename);
                      write(sockfd,wbuf,5);
                      continue;
                  }
@@ -576,10 +577,13 @@ void cmd_tcp(int sockfd)
          //9.清空读缓冲区 和 写缓冲区
              bzero(rbuf,strlen(rbuf));
          //10.读套接字中的内容
+
              if((nread = recv(sockfd,rbuf,MAXBUF,0)) <0)
                   printf("recv error\n");
              else if(nread == 0)
                break;
+
+             //printf("%s",rbuf);
 
              if(strncmp(rbuf,"220",3) ==0 || strncmp(rbuf,"530",3)==0)
              {
@@ -687,15 +691,34 @@ void cmd_tcp(int sockfd)
                     //int str = strlen(filename);
                     //printf("%d\n",str);
                     sprintf(wbuf,"RETR %s\n",filename);
-                    printf("%s\n",wbuf);
+
+                    //printf("%s\n",wbuf);
                     //int p = 5 + str + 1;
 
                     //命令套接字中写入  下载文件命令
-                    printf("%d\n",write(sockfd,wbuf,strlen(wbuf)));
+                    write(sockfd,wbuf,strlen(wbuf));
+
+                    //9.清空读缓冲区 和 写缓冲区
+                    bzero(rbuf,strlen(rbuf));
+                      //10.读套接字中的内容
+
+                    if((nread = recv(sockfd,rbuf,MAXBUF,0)) <0)
+                        printf("recv error\n");
+
+                    //printf("%s",rbuf);
+                    if(strncmp(rbuf,"550",3) == 0)
+                    {
+                      replycode = 550;
+                    }
+                    // 如果有这个文件，就下载
+                    else{
+                      ftp_get(data_sock,filename);
+                    }
+                    //printf("%d\n",write(sockfd,wbuf,strlen(wbuf)));
                     //printf("%d\n",p);
 
                     //下载文件 
-                    ftp_get(data_sock,filename);
+                    
                 }
                 else if(tag == 3)
                 {
@@ -704,7 +727,24 @@ void cmd_tcp(int sockfd)
                     sprintf(wbuf,"STOR %s\n",filename);
                     printf("%s\n",wbuf);
                     write(sockfd,wbuf,strlen(wbuf));
-                    ftp_put(data_sock,filename);
+
+                    //9.清空读缓冲区 和 写缓冲区
+                    bzero(rbuf,strlen(rbuf));
+                      //10.读套接字中的内容
+
+                    if((nread = recv(sockfd,rbuf,MAXBUF,0)) <0)
+                        printf("recv error\n");
+
+                    //printf("%s",rbuf);
+                    if(strncmp(rbuf,"550",3) == 0)
+                    {
+                      replycode = 550;
+                    }
+                    // 如果有这个文件，就下载
+                    else{
+                      ftp_put(data_sock,filename);
+                    }
+                    
                 }
                 nwrite = 0;     
              }
