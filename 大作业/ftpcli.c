@@ -268,11 +268,14 @@ int ftp_get(int sck,char *pDownloadFileName)
    printf("%d\n",handle);
    /*if(handle == -1) 
        return -1;*/
-
+   struct timeval start, end;
    
    for(;;)
-   {
-       //checkSpeed();
+   {  
+
+       //checkSpeed
+       gettimeofday( &start, NULL );
+
        if((nread = recv(sck,rbuf1,MAXBUF,0)) < 0)
        {  
           printf("receive error\n");
@@ -283,6 +286,14 @@ int ftp_get(int sck,char *pDownloadFileName)
           break;
        }
        printf("nread is %d",nread);//1024,760 
+
+       gettimeofday( &end, NULL );
+       int timeuse = 1000000 * ( end.tv_sec - start.tv_sec ) + end.tv_usec - start.tv_usec;
+
+       //MB/s
+       int speed = nread / timeuse;
+
+       printf("current speed is %d" ,speed );
     //   printf("%s\n",rbuf1);
        if(write(handle,rbuf1,nread) != nread)
            printf("receive error from server!");
@@ -294,6 +305,7 @@ int ftp_get(int sck,char *pDownloadFileName)
    }
        if(close(sck) < 0)
            printf("close error\n");
+      return 0;
 }
 
 /* upload file to ftp server */
@@ -321,6 +333,7 @@ int ftp_put(int sck,char *pUploadFileName_s)
    }
    if(close(sck) < 0)
         printf("close error\n");
+    return 0;
 }
 
 
