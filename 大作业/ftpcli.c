@@ -315,7 +315,7 @@ int ftp_put(int sck,char *pUploadFileName_s)
    int handle = open(pUploadFileName_s,O_RDWR);
    int nread;
    printf("%d",handle);
-   if(handle == -1)
+   if(handle < 0)
        return -1;
    //ftp_type(c_sock,"I");
 
@@ -417,19 +417,20 @@ void cmd_tcp(int sockfd)
                      write(sockfd,wbuf,4);
                      continue; 
                  }
-                 if(strncmp(rbuf1,"quit",4) == 0)
+                 else if(strncmp(rbuf1,"quit",4) == 0)
                  {
                      sprintf(wbuf,"%s","QUIT\n");
                      write(sockfd,wbuf,5);
                      //close(sockfd);
                     if(close(sockfd) <0)
                        printf("close error\n");
+                    printf("221 Goodbye.");
                     break;
                  }
                   /*************************************************************
                   // 5. code here: cd - change working directory/
                   *************************************************************/                 
-                 if(strncmp(rbuf1,"cd",2) == 0)
+                 else if(strncmp(rbuf1,"cd",2) == 0)
                  {
                      //sprintf(wbuf,"%s","PASV\n");
                      sscanf(rbuf1,"%s %s", tmp, dirname);
@@ -446,7 +447,7 @@ void cmd_tcp(int sockfd)
                  }
 
                  // mkdir function
-                 if(strncmp(rbuf1,"mkdir",5) == 0)
+                 else if(strncmp(rbuf1,"mkdir",5) == 0)
                  {
                      //sprintf(wbuf,"%s","PASV\n");
                      sscanf(rbuf1,"%s %s", tmp, dirname);
@@ -461,7 +462,7 @@ void cmd_tcp(int sockfd)
                      continue;
                  }
 
-                 if(strncmp(rbuf1,"delete",6) == 0)
+                 else if(strncmp(rbuf1,"delete",6) == 0)
                  {
                      //sprintf(wbuf,"%s","PASV\n");
                      sscanf(rbuf1,"%s %s", tmp, filename);
@@ -478,7 +479,7 @@ void cmd_tcp(int sockfd)
 
 
                  /* ls - list files and directories*/
-                 if(strncmp(rbuf1,"ls",2) == 0)
+                 else if(strncmp(rbuf1,"ls",2) == 0)
                  {
                      tag = 2;            //显示文件 标识符
                      //printf("%s\n",rbuf1);
@@ -495,7 +496,7 @@ void cmd_tcp(int sockfd)
                   /*************************************************************
                   // 7. code here: get - get file from ftp server
                   *************************************************************/
-                 if(strncmp(rbuf1,"get",3) == 0)
+                 else if(strncmp(rbuf1,"get",3) == 0)
                  {
                      tag = 1;            //下载文件标识符
 
@@ -512,7 +513,7 @@ void cmd_tcp(int sockfd)
                   /*************************************************************
                   // 8. code here: put -  put file upto ftp server
                   *************************************************************/                 
-                 if(strncmp(rbuf1,"put",3) == 0)
+                 else if(strncmp(rbuf1,"put",3) == 0)
                  {
                      tag = 3;            //上传文件标识符
                      sprintf(wbuf,"%s","PASV\n");
@@ -525,7 +526,7 @@ void cmd_tcp(int sockfd)
                  }
 
                  //binary mode and ascii mode
-                if(strncmp(rbuf1,"binary",6) == 0)
+                else if(strncmp(rbuf1,"binary",6) == 0)
                  {
                      sprintf(wbuf,"TYPE %s","I\n");
 
@@ -535,7 +536,7 @@ void cmd_tcp(int sockfd)
                      write(sockfd,wbuf,7);
                      continue;
                  }
-                 if(strncmp(rbuf1,"ascii",5) == 0)
+                 else if(strncmp(rbuf1,"ascii",5) == 0)
                  {
                      sprintf(wbuf,"TYPE %s","A\n");
 
@@ -546,7 +547,7 @@ void cmd_tcp(int sockfd)
                      continue;
                  }
 
-                 if(strncmp(rbuf1,"rename",6) == 0)
+                 else if(strncmp(rbuf1,"rename",6) == 0)
                  {
                      //sprintf(wbuf,"%s","PASV\n");
                      sscanf(rbuf1,"%s %s %s", tmp, filename,newfilename);
@@ -566,6 +567,11 @@ void cmd_tcp(int sockfd)
                      
                      continue;
                  }
+                 else{
+                  write(sockfd,rbuf1,strlen(rbuf1));
+                  continue;
+                 }
+
 
 
 
