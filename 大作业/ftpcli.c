@@ -314,6 +314,7 @@ int ftp_put(int sck,char *pUploadFileName_s)
    //int c_sock;
    int handle = open(pUploadFileName_s,O_RDWR);
    int nread;
+   printf("%d",handle);
    if(handle == -1)
        return -1;
    //ftp_type(c_sock,"I");
@@ -735,15 +736,7 @@ void cmd_tcp(int sockfd)
                     if((nread = recv(sockfd,rbuf,MAXBUF,0)) <0)
                         printf("recv error\n");
 
-                    //printf("%s",rbuf);
-                    if(strncmp(rbuf,"550",3) == 0)
-                    {
-                      replycode = 550;
-                    }
-                    // 如果有这个文件，就下载
-                    else{
-                      ftp_put(data_sock,filename);
-                    }
+                    ftp_put(data_sock,filename);
                     
                 }
                 nwrite = 0;     
