@@ -285,15 +285,18 @@ int ftp_get(int sck,char *pDownloadFileName)
           printf("over\n");
           break;
        }
-       printf("nread is %d",nread);//1024,760 
+       //Limiting speed function
+       /*
+       printf("nread is %d\n",nread);//1024,760 
 
        gettimeofday( &end, NULL );
-       int timeuse = 1000000 * ( end.tv_sec - start.tv_sec ) + end.tv_usec - start.tv_usec;
+       float timeuse = 1000000 * ( end.tv_sec - start.tv_sec ) + end.tv_usec - start.tv_usec;
 
        //MB/s
-       int speed = nread / timeuse;
+       float speed = nread / timeuse;
+       printf("current speed is %.2f" ,speed );
 
-       printf("current speed is %d" ,speed );
+       */
     //   printf("%s\n",rbuf1);
        if(write(handle,rbuf1,nread) != nread)
            printf("receive error from server!");
@@ -314,9 +317,8 @@ int ftp_put(int sck,char *pUploadFileName_s)
    //int c_sock;
    int handle = open(pUploadFileName_s,O_RDWR);
    int nread;
-   printf("open 返回的值是 %d",handle);
    //error open
-   if(handle ==-1)
+   if(handle == -1)
        return -1;
    //ftp_type(c_sock,"I");
 
@@ -372,7 +374,7 @@ void cmd_tcp(int sockfd)
               
               
               //set_disp_mode(STDIN_FILENO,1);  
-            
+
               if((nread = read(STDIN_FILENO,rbuf1,MAXBUF)) <0)
                    printf("read error from stdin\n");
               nwrite = nread + 5;
@@ -465,17 +467,17 @@ void cmd_tcp(int sockfd)
 
                  else if(strncmp(rbuf1,"delete",6) == 0)
                  {
-                     //sprintf(wbuf,"%s","PASV\n");
-                     sscanf(rbuf1,"%s %s", tmp, filename);
-                     //printf("%s\n", dirname);
-                     int filenameLen= strlen(filename);
-                     //if not, the final character will be the \000
-                     filename[filenameLen] = '\n';
-                     sprintf(wbuf,"DELE %s",filename);
-                     write(sockfd,wbuf,nread+1);
-                     //sprintf(wbuf1,"%s","CWD\n");
-                     
-                     continue;
+                     tag = 4; //删除文件标识符
+                     //printf("%s\n",rbuf1);
+                     sprintf(wbuf,"%s","PASV\n");
+                     //printf("%s\n",wbuf);
+                     write(sockfd,wbuf,5);
+                     //read
+                     //sprintf(wbuf1,"%s","LIST -al\n");
+                     nwrite = 0;
+                     //write(sockfd,wbuf1,nwrite);
+                     //ftp_list(sockfd);
+                     continue;   
                  }
 
 
@@ -730,13 +732,41 @@ void cmd_tcp(int sockfd)
                 }
                 else if(tag == 3)
                 {
-
                     // 上传文件
                     sprintf(wbuf,"STOR %s\n",filename);
-                    printf("%s",wbuf);
-                    write(sockfd,wbuf,strlen(wbuf));
-                    ftp_put(data_sock,filename);
+                    //printf("%s",wbuf);
+                    int handle = open(filename,O_RDWR);
+                    //printf("%s",wbuf);
+
+                    //Handle file not exist error
+                    if (handle != -1)
+                    {
+                      close(handle);
+                      write(sockfd,wbuf,strlen(wbuf));
+                      ftp_put(data_sock,filename);
+                    }
+                    else{
+                      bzero(wbuf,strlen(wbuf));
+                      printf("File not exist\n");
+                      printf("%s",wbuf);
+                    }
+                       //int c_sock;
+                     
                     
+                    
+                }
+                else if (tag == 4){
+                   //sprintf(wbuf,"%s","PASV\n");
+                     sscanf(rbuf1,"%s %s", tmp, filename);
+                     //printf("%s\n", dirname);
+                     int filenameLen= strlen(filename);
+                     //if not, the final character will be the \000
+                     filename[filenameLen] = '\n';
+                     sprintf(wbuf,"DELE %s",filename);
+                     write(sockfd,wbuf,nread+1);
+                     //sprintf(wbuf1,"%s","CWD\n");
+                     
+                     continue;
                 }
                 nwrite = 0;     
              }
@@ -748,6 +778,7 @@ void cmd_tcp(int sockfd)
              //printf("%s\n",rbuf);
              if(write(STDOUT_FILENO,rbuf,nread) != nread)
                  printf("write error to stdout\n");
+              
 
               //如果该输密码了，让输入不可见
               if (replycode == PASSWORD)
