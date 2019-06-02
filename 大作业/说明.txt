@@ -1,0 +1,12 @@
+1: 启动 虚拟机 vb
+2: 启动 xshell,连接虚拟机
+（如果程序未编译：将程序移动进来后gcc -o ftpcli ftpcli.c）
+3: 启动client 程序：
+./ftpcli ip(123.206.33.80)
+4:连接服务器后 输入错误密码
+5：正常登录 （密码是隐藏的）
+6：演示各个指令 ls ascii get mkdir cd pwd binary put rename delete quit
+7：检查文件名出错，路径名出错处理
+8：检查下载的文件内容和上传的文件内容
+9：扩展功能（演示另外的程序，尚未添加）
+
