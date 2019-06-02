@@ -274,7 +274,7 @@ int ftp_get(int sck,char *pDownloadFileName)
    {  
 
        //checkSpeed
-       gettimeofday( &start, NULL );
+       //gettimeofday( &start, NULL );
 
        if((nread = recv(sck,rbuf1,MAXBUF,0)) < 0)
        {  
