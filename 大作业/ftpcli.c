@@ -316,7 +316,7 @@ int ftp_put(int sck,char *pUploadFileName_s)
    int nread;
    printf("open 返回的值是 %d",handle);
    //error open
-   if(handle < 0)
+   if(handle ==-1)
        return -1;
    //ftp_type(c_sock,"I");
 
@@ -733,7 +733,7 @@ void cmd_tcp(int sockfd)
 
                     // 上传文件
                     sprintf(wbuf,"STOR %s\n",filename);
-                    printf("%s\n",wbuf);
+                    printf("%s",wbuf);
                     write(sockfd,wbuf,strlen(wbuf));
                     ftp_put(data_sock,filename);
                     
