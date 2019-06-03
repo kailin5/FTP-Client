@@ -57,7 +57,7 @@ struct sockaddr_in servaddr;
 //int getpasswd(char *passwd, int size);
 int set_disp_mode(int fd,int option);
 int cliopen(char *host,int port);
-int strtosrv(char *str);
+//int strtosrv(char *str);
 void  ftp_list(int sockfd);
 int ftp_get(int sck,char *pDownloadFileName);
 int ftp_put(int sck,char *pUploadFileName_s);
@@ -205,26 +205,6 @@ int st(char *str,char *s1)
     return sscanf(str," put %s",s1) == 1;
 }
 
-
-/*
-   Compute server's port by a pair of integers and store it in char *port
-   Get server's IP address and store it in char *host
-*/
-int strtosrv(char *str)
-{
-  /*************************************************************
-  //3. code here to compute the port number for data connection
-  EG:10,3,255,85,192,181  192*256+181 = 49333
-  *************************************************************/
-   int addr[6];
-   //divide the string in to different parts
-   sscanf(str,"%*[^(](%d,%d,%d,%d,%d,%d)",&addr[0],&addr[1],&addr[2],&addr[3],&addr[4],&addr[5]);
-   //clear the host
-   bzero(host,strlen(host));
-   sprintf(host,"%d.%d.%d.%d",addr[0],addr[1],addr[2],addr[3]);
-   int port = addr[4]*256 + addr[5];
-   return port;
-}
 
 /* Read and write as data transfer connection */
 void ftp_list(int sockfd)
@@ -434,7 +414,6 @@ void cmd_tcp(int sockfd)
                   *************************************************************/                 
                  else if(strncmp(rbuf1,"cd",2) == 0)
                  {
-                     //sprintf(wbuf,"%s","PASV\n");
                      sscanf(rbuf1,"%s %s", tmp, dirname);
                      //printf("%s\n", dirname);
                      int dirnameLen= strlen(dirname);
@@ -451,7 +430,6 @@ void cmd_tcp(int sockfd)
                  // mkdir function
                  else if(strncmp(rbuf1,"mkdir",5) == 0)
                  {
-                     //sprintf(wbuf,"%s","PASV\n");
                      sscanf(rbuf1,"%s %s", tmp, dirname);
                      //printf("%s\n", dirname);
                      int dirnameLen= strlen(dirname);
@@ -468,9 +446,9 @@ void cmd_tcp(int sockfd)
                  {
                      tag = 4; //删除文件标识符
                      //printf("%s\n",rbuf1);
-                     sprintf(wbuf,"%s","PASV\n");
+                     sprintf(wbuf,"%s","PORT 10,0,2,15,50,113\n");
                      //printf("%s\n",wbuf);
-                     write(sockfd,wbuf,5);
+                     write(sockfd,wbuf,23);
                      //read
                      //sprintf(wbuf1,"%s","LIST -al\n");
                      nwrite = 0;
@@ -485,9 +463,9 @@ void cmd_tcp(int sockfd)
                  {
                      tag = 2;            //显示文件 标识符
                      //printf("%s\n",rbuf1);
-                     sprintf(wbuf,"%s","PASV\n");
+                     sprintf(wbuf,"%s","PORT 10,128,207,182,50,113\n");
                      //printf("%s\n",wbuf);
-                     write(sockfd,wbuf,5);
+                     write(sockfd,wbuf,26);
                      //read
                      //sprintf(wbuf1,"%s","LIST -al\n");
                      nwrite = 0;
@@ -503,13 +481,13 @@ void cmd_tcp(int sockfd)
                      tag = 1;            //下载文件标识符
 
                      //被动传输模式    
-                     sprintf(wbuf,"%s","PASV\n");                   
+                     sprintf(wbuf,"%s","PORT 10,0,2,15,50,113\n");                   
                      //printf("%s\n",s(rbuf1));
                      //char filename[100];
                      s(rbuf1,filename);
                      
                      //printf("%s\n",filename);
-                     write(sockfd,wbuf,5);
+                     write(sockfd,wbuf,22);
                      continue;
                  }
                   /*************************************************************
@@ -518,12 +496,12 @@ void cmd_tcp(int sockfd)
                  else if(strncmp(rbuf1,"put",3) == 0)
                  {
                      tag = 3;            //上传文件标识符
-                     sprintf(wbuf,"%s","PASV\n");
+                     sprintf(wbuf,"%s","PORT 10,0,2,15,50,113\n");
 
                     //把内容赋值给  读缓冲区
                      st(rbuf1,filename);
                      //printf("%s\n",filename);
-                     write(sockfd,wbuf,5);
+                     write(sockfd,wbuf,22);
                      continue;
                  }
 
@@ -664,14 +642,14 @@ void cmd_tcp(int sockfd)
                     printf("write error to stdout\n");
              }*/    
              //fprintf(stderr,"%d\n",1);
-             if(strncmp(rbuf,"227",3) == 0)
+             if(strncmp(rbuf,"200",3) == 0)
              {
                 //printf("%d\n",1);
                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
                    printf("write error to stdout\n");*/
 
                 //获取服务器返回的 接收数据的端口，和地址
-                int port1 = strtosrv(rbuf);
+                int port1 = 12913;
                 printf("%d\n",port1);
                 printf("%s\n",host);
 
@@ -755,7 +733,6 @@ void cmd_tcp(int sockfd)
                     
                 }
                 else if (tag == 4){
-                   //sprintf(wbuf,"%s","PASV\n");
                      sscanf(rbuf1,"%s %s", tmp, filename);
                      //printf("%s\n", dirname);
                      int filenameLen= strlen(filename);
