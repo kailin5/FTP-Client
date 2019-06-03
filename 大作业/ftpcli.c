@@ -159,7 +159,7 @@ int getpasswd(char *passwd, int size)
 /* Establish a TCP connection from client to server */
 int cliopen(char *host,int port)
 {   
-    //control socket, in corresponding to data socket
+    //control and data socket
     int control_sock;
     struct hostent *ht = NULL;
 
@@ -397,7 +397,6 @@ void cmd_tcp(int sockfd)
              /*************************************************************
              //4. code here: send password
              *************************************************************/
-
               if(replycode == PASSWORD)
               {
                    //printf("%s\n",rbuf1);

@@ -1,0 +1,50 @@
+代码说明文档：
+
+1-14 编程中所用到的头文件
+
+
+31-43 一些常量，
+#define ECHOFLAGS (ECHO | ECHOE | ECHOK | ECHONL)
+用于输入密码时的关闭显示
+
+47-53 全局变量
+
+68-88
+int set_disp_mode(int fd,int option);
+设置输入是否回显
+回显：比如我现在输入的东西都会显示出来，但是输入密码时我们不想让别人知道，所以要关闭回显。
+接收到的option 如果是0，输入什么就不会显示出来，如果是1，就会显示出来，包含一些容错
+
+160-180
+int cliopen(char *host,int port);
+根据ip地址，port打开一个tcp连接，返回socket
+
+213-227
+int strtosrv(char *str); 
+获得PASV 模式下的port number
+例如  EG:10,3,255,85,192,181  192*256+181 = 49333
+
+230-341
+三个ftp指令 ls, put, get 的文件操作（data socket 里面的操作）
+void  ftp_list(int sockfd);
+
+int ftp_get(int sck,char *pDownloadFileName);
+
+int ftp_put(int sck,char *pUploadFileName_s);
+
+
+345-796 void cmd_tcp(int sockfd);  
+主要函数，所有的操作基本都是围绕此函数进行，
+
+包括一个大for 循环 （355行）（可以让用户持续进行输入指令和进行ftp操作）及利用select 监听多个输入输出（见课件）
+
+384-584 根据处理后的replycode，每一个返回的代码对应下一步用户该干什么或者会输入什么东西
+
+585--680: 根据服务器返回的内容（rbuf里前三个字符（数字），例如350,227等，设置replycode）
+
+413-563 处理绝大部分的用户输入转化为服务器可以理解的文字(ascii --> TYPE A）(binary --> TYPE I）(mkdir --> MKD) 等等 
+
+687 - 771 根据不同的tag 处理一些需要data sock 或者额外操作的的请求 （put get list delete）
+
+
+main 主函数，判断是否输入缺少ip地址，初始化，开启cmd tcp
