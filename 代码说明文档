@@ -1,0 +1,33 @@
+代码说明文档：
+
+编程中所用到的头文件
+
+
+一些常量，
+#define ECHOFLAGS (ECHO | ECHOE | ECHOK | ECHONL)
+用于输入密码时的关闭显示
+
+全局变量
+
+设置输入是否回显
+回显：比如我现在输入的东西都会显示出来，但是输入密码时我们不想让别人知道，所以要关闭回显。
+int set_disp_mode(int fd,int option);
+
+打开一个tcp连接
+int cliopen(char *host,int port);
+
+int strtosrv(char *str); 获得PASV 模式下的port number
+
+三个ftp指令 ls, put, get 的文件操作
+void  ftp_list(int sockfd);
+int ftp_get(int sck,char *pDownloadFileName);
+int ftp_put(int sck,char *pUploadFileName_s);
+
+主要函数，所有的操作基本都是围绕此函数进行
+void cmd_tcp(int sockfd);  
+
+set disp mode 主要是设置是否回显
+
+main 主函数，判断是否输入缺少ip地址，
+
+连接到给定ip地址的给定端口
