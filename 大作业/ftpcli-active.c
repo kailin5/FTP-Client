@@ -463,9 +463,9 @@ void cmd_tcp(int sockfd)
                  {
                      tag = 2;            //显示文件 标识符
                      //printf("%s\n",rbuf1);
-                     sprintf(wbuf,"%s","PORT 10,128,207,182,50,113\n");
+                     sprintf(wbuf,"%s","PORT 10,128,192,213,50,113\n");
                      //printf("%s\n",wbuf);
-                     write(sockfd,wbuf,26);
+                     write(sockfd,wbuf,27);
                      //read
                      //sprintf(wbuf1,"%s","LIST -al\n");
                      nwrite = 0;
