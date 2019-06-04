@@ -51,7 +51,8 @@ char tmp[100];
 char dirname[100];            
 char *host;                            /* hostname or dotted-decimal string */
 struct sockaddr_in servaddr;   
-
+char activeCommand[27] = "PORT 10,128,192,213,50,113\n";
+char activeAddress[100] = "10,128,192,213,50,113";
 
 //int mygetch();
 //int getpasswd(char *passwd, int size);
@@ -115,46 +116,6 @@ int main(int argc,char *argv[])
     exit(0);
 }
 
-/* 如果不用替换* 暂时不用这个
-int mygetch()
-{
-    struct termios oldt, newt;
-    int ch;
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    ch = getchar();
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    return ch;
-}
-
-// password to * method 
-int getpasswd(char *passwd, int size)
-{
-    int c, n = 0;
-    do
-    {
-        c = mygetch();
-        if (c != '\n' && c != 'r' && c != 127)
-        {
-            passwd[n] = c;
-            printf("*");
-            n++;
-        }
-        else if ((c != '\n' | c != '\r') && c == 127)//判断是否是回车或则退格
-        {
-            if (n > 0)
-            {
-                n--;
-                printf("\b \b");//输出退格
-            }
-        }
-    }while (c != '\n' && c != '\r' && n < (size - 1));
-    passwd[n] = '\0';//消除一个多余的回车
-    return n;
-}
-*/
 
 /* Establish a TCP connection from client to server */
 int cliopen(char *host,int port)
@@ -187,6 +148,36 @@ int cliopen(char *host,int port)
     {
         return -1;
     }
+    return control_sock;
+}
+
+/* Establish a TCP connection from client to server */
+int cliopenData(char *host,int port)
+{   
+    /*server ip and port*/
+          struct sockaddr_in servaddr;
+          bzero(&servaddr,sizeof(servaddr));
+          servaddr.sin_family = AF_INET;
+          servaddr.sin_addr.s_addr = host;
+          servaddr.sin_port = port;
+          /*local ip and port*/
+          struct sockaddr_in cltaddr;
+          bzero(&cltaddr,sizeof(cltaddr));
+          cltaddr.sin_family = AF_INET;
+          cltaddr.sin_addr.s_addr = activeCommand;
+          cltaddr.sin_port = 12913;
+          /*create socket*/
+         sockfd =socket(AF_INET,SOCK_STREAM,0);
+         if(sockfd<0){
+            printf("create socket error...\n");
+            exit(1);
+         }
+          int reuse = 1;
+          setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int));
+         if((bind(sockfd,(struct sockaddr*)&cltaddr,sizeof(cltaddr)))<0){
+                 printf("can not bind....\n");
+                 exit(1);
+          }
     return control_sock;
 }
 
@@ -446,7 +437,7 @@ void cmd_tcp(int sockfd)
                  {
                      tag = 4; //删除文件标识符
                      //printf("%s\n",rbuf1);
-                     sprintf(wbuf,"%s","PORT 10,0,2,15,50,113\n");
+                     sprintf(wbuf,"%s",activeCommand);
                      //printf("%s\n",wbuf);
                      write(sockfd,wbuf,23);
                      //read
@@ -463,7 +454,7 @@ void cmd_tcp(int sockfd)
                  {
                      tag = 2;            //显示文件 标识符
                      //printf("%s\n",rbuf1);
-                     sprintf(wbuf,"%s","PORT 10,128,192,213,50,113\n");
+                     sprintf(wbuf,"%s",activeCommand);
                      //printf("%s\n",wbuf);
                      write(sockfd,wbuf,27);
                      //read
@@ -481,7 +472,7 @@ void cmd_tcp(int sockfd)
                      tag = 1;            //下载文件标识符
 
                      //被动传输模式    
-                     sprintf(wbuf,"%s","PORT 10,0,2,15,50,113\n");                   
+                     sprintf(wbuf,"%s",activeCommand);                   
                      //printf("%s\n",s(rbuf1));
                      //char filename[100];
                      s(rbuf1,filename);
@@ -496,7 +487,7 @@ void cmd_tcp(int sockfd)
                  else if(strncmp(rbuf1,"put",3) == 0)
                  {
                      tag = 3;            //上传文件标识符
-                     sprintf(wbuf,"%s","PORT 10,0,2,15,50,113\n");
+                     sprintf(wbuf,"%s",activeCommand);
 
                     //把内容赋值给  读缓冲区
                      st(rbuf1,filename);
