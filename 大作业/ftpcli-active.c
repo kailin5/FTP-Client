@@ -151,39 +151,6 @@ int cliopen(char *host,int port)
     return control_sock;
 }
 
-/* Establish a TCP connection from client to server */
-int cliopenData(char *host,int port)
-{     
-  int data_sock;
-  printf("正在开启data port");
-    /*server ip and port*/
-          struct sockaddr_in servaddr;
-          bzero(&servaddr,sizeof(servaddr));
-          servaddr.sin_family = AF_INET;
-          servaddr.sin_addr.s_addr = gethostbyname(host);
-          servaddr.sin_port = port;
-          printf("server 结构体定义完成");
-          /*local ip and port*/
-          struct sockaddr_in cltaddr;
-          bzero(&cltaddr,sizeof(cltaddr));
-          cltaddr.sin_family = AF_INET;
-          cltaddr.sin_addr.s_addr = gethostbyname(activeCommand);
-          cltaddr.sin_port = 12913;
-          printf("client 结构体定义完成");
-          /*create socket*/
-         data_sock =socket(AF_INET,SOCK_STREAM,0);
-         if(data_sock<0){
-            printf("create socket error...\n");
-            exit(1);
-         }
-          int reuse = 1;
-          setsockopt(data_sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int));
-         if((bind(data_sock,(struct sockaddr*)&cltaddr,sizeof(cltaddr)))<0){
-                 printf("can not bind....\n");
-                 exit(1);
-          }
-    return data_sock;
-}
 
 int dataSock(char *host,int port){
   //printf("正在开启data port\n");
@@ -289,15 +256,24 @@ int ftp_get(int sck,char *pDownloadFileName)
    printf("%d\n",handle);
    /*if(handle == -1) 
        return -1;*/
-   struct timeval start, end;
    
+   struct sockaddr_in clientAddr;
+    unsigned int cliAddrLen;
+    //printf("%d",tmp);
+    //printf("%d",sockfd);
+    int newsockfd = 0;
+        cliAddrLen = sizeof(clientAddr);
+        if((newsockfd = accept(sck, (struct sockaddr *) &clientAddr, &cliAddrLen)) < 0)
+        {//create a new socket
+          printf("accept() failed.\n");
+        exit(1);
+      }
+
    for(;;)
    {  
 
-       //checkSpeed
-       //gettimeofday( &start, NULL );
 
-       if((nread = recv(sck,rbuf1,MAXBUF,0)) < 0)
+       if((nread = recv(newsockfd,rbuf1,MAXBUF,0)) < 0)
        {  
           printf("receive error\n");
        }
@@ -306,18 +282,6 @@ int ftp_get(int sck,char *pDownloadFileName)
           printf("over\n");
           break;
        }
-       //Limiting speed function
-       /*
-       printf("nread is %d\n",nread);//1024,760 
-
-       gettimeofday( &end, NULL );
-       float timeuse = 1000000 * ( end.tv_sec - start.tv_sec ) + end.tv_usec - start.tv_usec;
-
-       //MB/s
-       float speed = nread / timeuse;
-       printf("current speed is %.2f" ,speed );
-
-       */
     //   printf("%s\n",rbuf1);
        if(write(handle,rbuf1,nread) != nread)
            printf("receive error from server!");
@@ -329,6 +293,8 @@ int ftp_get(int sck,char *pDownloadFileName)
    }
        if(close(sck) < 0)
            printf("close error\n");
+        if(close(newsockfd) < 0)
+        printf("close error\n");
       return 0;
 }
 
@@ -342,7 +308,17 @@ int ftp_put(int sck,char *pUploadFileName_s)
    if(handle == -1)
        return -1;
    //ftp_type(c_sock,"I");
-
+    struct sockaddr_in clientAddr;
+    unsigned int cliAddrLen;
+    //printf("%d",tmp);
+    //printf("%d",sockfd);
+    int newsockfd = 0;
+        cliAddrLen = sizeof(clientAddr);
+        if((newsockfd = accept(sck, (struct sockaddr *) &clientAddr, &cliAddrLen)) < 0)
+        {//create a new socket
+          printf("accept() failed.\n");
+        exit(1);
+      }
    for(;;)
    {
        if((nread = read(handle,rbuf1,MAXBUF)) < 0)
@@ -353,11 +329,14 @@ int ftp_put(int sck,char *pUploadFileName_s)
           break;
        if(write(STDOUT_FILENO,rbuf1,nread) != nread)
             printf("send error!");
-       if(write(sck,rbuf1,nread) != nread)
+       if(write(newsockfd,rbuf1,nread) != nread)
             printf("send error!");
    }
    if(close(sck) < 0)
         printf("close error\n");
+    if(close(newsockfd) < 0)
+        printf("close error\n");
+
     return 0;
 }
 
@@ -430,7 +409,7 @@ void cmd_tcp(int sockfd)
               }
               
                /* send command */
-              if(replycode == 550 || replycode == LOGIN || replycode == CLOSEDATA || replycode == PATHNAME || replycode == ACTIONOK)
+              if(replycode == 550 || replycode == 553 || replycode == LOGIN || replycode == CLOSEDATA || replycode == PATHNAME || replycode == ACTIONOK)
               {
                 /* pwd -  print working directory */
                 if(strncmp(rbuf1,"pwd",3) == 0)
@@ -489,7 +468,7 @@ void cmd_tcp(int sockfd)
                      //printf("%s\n",rbuf1);
                      sprintf(wbuf,"%s",activeCommand);
                      //printf("%s\n",wbuf);
-                     write(sockfd,wbuf,23);
+                     write(sockfd,wbuf,strlen(activeCommand));
                      //read
                      //sprintf(wbuf1,"%s","LIST -al\n");
                      nwrite = 0;
@@ -506,7 +485,7 @@ void cmd_tcp(int sockfd)
                      //printf("%s\n",rbuf1);
                      sprintf(wbuf,"%s",activeCommand);
                      //printf("%s\n",wbuf);
-                     write(sockfd,wbuf,27);
+                     write(sockfd,wbuf,strlen(activeCommand));
                      //read
                      //sprintf(wbuf1,"%s","LIST -al\n");
                      nwrite = 0;
@@ -528,7 +507,7 @@ void cmd_tcp(int sockfd)
                      s(rbuf1,filename);
                      
                      //printf("%s\n",filename);
-                     write(sockfd,wbuf,22);
+                     write(sockfd,wbuf,strlen(activeCommand));
                      continue;
                  }
                   /*************************************************************
@@ -542,7 +521,7 @@ void cmd_tcp(int sockfd)
                     //把内容赋值给  读缓冲区
                      st(rbuf1,filename);
                      //printf("%s\n",filename);
-                     write(sockfd,wbuf,22);
+                     write(sockfd,wbuf,27);
                      continue;
                  }
 
@@ -666,6 +645,11 @@ void cmd_tcp(int sockfd)
              if(strncmp(rbuf,"550",3) == 0)
              {
                 replycode = 550;
+             }
+             //not allow to create file
+             if(strncmp(rbuf,"553",3) == 0)
+             {
+                replycode = 553;
              }
 
              // Ready to rename
