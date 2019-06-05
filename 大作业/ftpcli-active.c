@@ -51,8 +51,8 @@ char tmp[100];
 char dirname[100];            
 char *host;                            /* hostname or dotted-decimal string */
 struct sockaddr_in servaddr;   
-char activeCommand[27] = "PORT 10,128,192,213,50,113\n";
-char activeAddress[100] = "10,128,192,213,50,113";
+char activeCommand[27] = "PORT 10,128,218,191,50,113\n";
+char activeAddress[100] = "10.128.218.191";
 
 //int mygetch();
 //int getpasswd(char *passwd, int size);
@@ -153,34 +153,68 @@ int cliopen(char *host,int port)
 
 /* Establish a TCP connection from client to server */
 int cliopenData(char *host,int port)
-{   
+{     
+  int data_sock;
+  printf("正在开启data port");
     /*server ip and port*/
           struct sockaddr_in servaddr;
           bzero(&servaddr,sizeof(servaddr));
           servaddr.sin_family = AF_INET;
-          servaddr.sin_addr.s_addr = host;
+          servaddr.sin_addr.s_addr = gethostbyname(host);
           servaddr.sin_port = port;
+          printf("server 结构体定义完成");
           /*local ip and port*/
           struct sockaddr_in cltaddr;
           bzero(&cltaddr,sizeof(cltaddr));
           cltaddr.sin_family = AF_INET;
-          cltaddr.sin_addr.s_addr = activeCommand;
+          cltaddr.sin_addr.s_addr = gethostbyname(activeCommand);
           cltaddr.sin_port = 12913;
+          printf("client 结构体定义完成");
           /*create socket*/
-         sockfd =socket(AF_INET,SOCK_STREAM,0);
-         if(sockfd<0){
+         data_sock =socket(AF_INET,SOCK_STREAM,0);
+         if(data_sock<0){
             printf("create socket error...\n");
             exit(1);
          }
           int reuse = 1;
-          setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int));
-         if((bind(sockfd,(struct sockaddr*)&cltaddr,sizeof(cltaddr)))<0){
+          setsockopt(data_sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int));
+         if((bind(data_sock,(struct sockaddr*)&cltaddr,sizeof(cltaddr)))<0){
                  printf("can not bind....\n");
                  exit(1);
           }
-    return control_sock;
+    return data_sock;
 }
 
+int dataSock(char *host,int port){
+  //printf("正在开启data port\n");
+  int sock;
+  struct sockaddr_in severAddr;
+  struct sockaddr_in clientAddr;
+  unsigned int cliAddrLen;
+  char recvBuffer[MAXBUF] = "";
+  unsigned short severPort;
+  int recvMsgSize;
+  
+
+  severPort = atoi("12913");
+  if((sock = socket(PF_INET,SOCK_STREAM,0))<0){
+    printf("socket() failed.\n");
+    exit(1);
+  }
+  memset(&severAddr, 0, sizeof(severAddr));
+  severAddr.sin_family = AF_INET;
+  severAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+  severAddr.sin_port = htons(severPort);
+  if(bind(sock,(struct sockaddr *) &severAddr, sizeof(severAddr)) < 0){
+    printf("bind() failed.\n");
+    exit(1);
+  }
+  listen(sock, 1);
+  //printf("已经开启data port");
+  return sock;
+
+  
+}
 //匹配下载的文件名
 int s(char *str,char *s2)
 {
@@ -192,7 +226,7 @@ int s(char *str,char *s2)
 
 //匹配上传的文件名
 int st(char *str,char *s1)
-{
+{ 
     return sscanf(str," put %s",s1) == 1;
 }
 
@@ -201,10 +235,23 @@ int st(char *str,char *s1)
 void ftp_list(int sockfd)
 {
     int nread;
+    struct sockaddr_in clientAddr;
+    unsigned int cliAddrLen;
+    //printf("%d",tmp);
+    //printf("%d",sockfd);
+    int newsockfd = 0;
+        cliAddrLen = sizeof(clientAddr);
+        if((newsockfd = accept(sockfd, (struct sockaddr *) &clientAddr, &cliAddrLen)) < 0)
+        {//create a new socket
+          printf("accept() failed.\n");
+        exit(1);
+      }
+
     for( ; ; )
-    {
+    {   
+
         /* data to read from socket */
-        if((nread = recv(sockfd,rbuf1,MAXBUF,0)) < 0)
+        if((nread = recv(newsockfd,rbuf1,MAXBUF,0)) < 0)
         {
             printf("recv error\n");
         }
@@ -217,8 +264,11 @@ void ftp_list(int sockfd)
             printf("send error to stdout\n");
         /*else
             printf("read something\n");*/
+          printf("%d",nread);
     }
     if(close(sockfd) < 0)
+        printf("close error\n");
+    if(close(newsockfd) < 0)
         printf("close error\n");
 }
 
@@ -633,7 +683,7 @@ void cmd_tcp(int sockfd)
                     printf("write error to stdout\n");
              }*/    
              //fprintf(stderr,"%d\n",1);
-             if(strncmp(rbuf,"200",3) == 0)
+             if(strncmp(rbuf,"200 PORT",8) == 0)
              {
                 //printf("%d\n",1);
                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
@@ -646,7 +696,7 @@ void cmd_tcp(int sockfd)
 
                 //创建新的传输数据的套接字?
                 //1. 猜测 ====================应该是将 ssl 接口放在这里，用来传输数据
-                data_sock = cliopen(host,port1);
+                data_sock = dataSock(host,port1);
         
 
 
@@ -655,7 +705,7 @@ void cmd_tcp(int sockfd)
                 //if(strncmp(rbuf1,"ls",2) == 0)
                 if(tag == 2)
                 {
-                   write(sockfd,"list\n",strlen("list\n"));
+                   write(sockfd,"LIST\n",strlen("list\n"));
                    ftp_list(data_sock);
                    /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
                        printf("write error to stdout\n");*/
@@ -681,7 +731,10 @@ void cmd_tcp(int sockfd)
                       //10.读套接字中的内容
 
                     if((nread = recv(sockfd,rbuf,MAXBUF,0)) <0)
-                        printf("recv error\n");
+                        {
+                          printf("recv error\n");
+                          exit(1);
+                        }
 
                     //printf("%s",rbuf);
                     if(strncmp(rbuf,"550",3) == 0)
