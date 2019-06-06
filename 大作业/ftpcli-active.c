@@ -697,7 +697,8 @@ void cmd_tcp(int sockfd)
                 }
                 //else if(strncmp(rbuf1,"get",3) == 0)
                 else if(tag == 1)
-                {
+                {     
+                  //下载文件 
                     //sprintf(wbuf,"%s","RETR\n");
                     //printf("%s\n",wbuf);
                     //int str = strlen(filename);
@@ -732,7 +733,7 @@ void cmd_tcp(int sockfd)
                     //printf("%d\n",write(sockfd,wbuf,strlen(wbuf)));
                     //printf("%d\n",p);
 
-                    //下载文件 
+                    
                     
                 }
                 else if(tag == 3)
