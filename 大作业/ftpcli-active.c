@@ -51,8 +51,8 @@ char tmp[100];
 char dirname[100];            
 char *host;                            /* hostname or dotted-decimal string */
 struct sockaddr_in servaddr;   
-char activeCommand[27] = "PORT 10,128,218,191,50,113\n";
-char activeAddress[100] = "10.128.218.191";
+char activeCommand[27] = "PORT 10,128,225,140,50,113\n";
+char activeAddress[100] = "10.128.225.140";
 
 //int mygetch();
 //int getpasswd(char *passwd, int size);
@@ -440,7 +440,7 @@ void cmd_tcp(int sockfd)
                      //if not, the final character will be the \000
                      dirname[dirnameLen] = '\n';
                      sprintf(wbuf,"CWD %s",dirname);
-                     write(sockfd,wbuf,nread+1);
+                     write(sockfd,wbuf,strlen(wbuf));
                      
                      //sprintf(wbuf1,"%s","CWD\n");
                      
@@ -454,9 +454,9 @@ void cmd_tcp(int sockfd)
                      //printf("%s\n", dirname);
                      int dirnameLen= strlen(dirname);
                      //if not, the final character will be the \000
-                     dirname[dirnameLen] = '\n';
-                     sprintf(wbuf,"MKD %s",dirname);
-                     write(sockfd,wbuf,nread+1);
+                     //dirname[dirnameLen] = '\n';
+                     sprintf(wbuf,"MKD %s\n",dirname);
+                     write(sockfd,wbuf,strlen(wbuf));
                      //sprintf(wbuf1,"%s","CWD\n");
                      
                      continue;
@@ -765,11 +765,11 @@ void cmd_tcp(int sockfd)
                      //printf("%s\n", dirname);
                      int filenameLen= strlen(filename);
                      //if not, the final character will be the \000
-                     filename[filenameLen] = '\n';
-                     sprintf(wbuf,"DELE %s",filename);
-                     write(sockfd,wbuf,nread+1);
+                     //filename[filenameLen] = '\n';
+                     sprintf(wbuf,"DELE %s\n",filename);
+                     write(sockfd,wbuf,strlen(wbuf));
                      //sprintf(wbuf1,"%s","CWD\n");
-                     
+                     close(data_sock);
                      continue;
                 }
                 nwrite = 0;     
