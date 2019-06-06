@@ -305,7 +305,9 @@ int ftp_get(int sck,char *pDownloadFileName)
        if(write(STDOUT_FILENO,rbuf1,nread) != nread)
            printf("receive error from server!");
       */
+         
    }
+        bzero(rbuf1,strlen(rbuf1));
        if(close(sck) < 0)
            printf("close error\n");
       return 0;
@@ -330,11 +332,14 @@ int ftp_put(int sck,char *pUploadFileName_s)
        }
        else if(nread == 0)
           break;
+       /*
        if(write(STDOUT_FILENO,rbuf1,nread) != nread)
             printf("send error!");
+      */
        if(write(sck,rbuf1,nread) != nread)
             printf("send error!");
    }
+   bzero(rbuf1,strlen(rbuf1));
    if(close(sck) < 0)
         printf("close error\n");
     return 0;
@@ -673,6 +678,7 @@ void cmd_tcp(int sockfd)
                 int port1 = strtosrv(rbuf);
                 printf("%d\n",port1);
                 printf("%s\n",host);
+                printf("Retrieving Data...\n");
 
                 //创建新的传输数据的套接字?
                 //1. 猜测 ====================应该是将 ssl 接口放在这里，用来传输数据
