@@ -425,13 +425,13 @@ void cmd_tcp(int sockfd)
 
                  else if(strncmp(rbuf1,"delete",6) == 0 && strlen(rbuf1)!=5)
                  {
-                     tag = 4; //删除文件标识符
-                     //printf("%s\n",rbuf1);
-                     sprintf(wbuf,"%s","PASV\n");
-                     //printf("%s\n",wbuf);
-                     write(sockfd,wbuf,5);
-                     //read
-                     //sprintf(wbuf1,"%s","LIST -al\n");
+                     sscanf(rbuf1,"%s %s", tmp, filename);
+                     //printf("%s\n", dirname);
+                     int filenameLen= strlen(filename);
+                     //if not, the final character will be the \000
+                     //filename[filenameLen] = '\n';
+                     sprintf(wbuf,"DELE %s\n",filename);
+                     write(sockfd,wbuf,strlen(wbuf));
                      nwrite = 0;
                      //write(sockfd,wbuf1,nwrite);
                      //ftp_list(sockfd);
@@ -712,19 +712,7 @@ void cmd_tcp(int sockfd)
                     
                     
                 }
-                else if (tag == 4){
-                   //sprintf(wbuf,"%s","PASV\n");
-                     sscanf(rbuf1,"%s %s", tmp, filename);
-                     //printf("%s\n", dirname);
-                     int filenameLen= strlen(filename);
-                     //if not, the final character will be the \000
-                     //filename[filenameLen] = '\n';
-                     sprintf(wbuf,"DELE %s\n",filename);
-                     write(sockfd,wbuf,strlen(wbuf));
-                     //sprintf(wbuf1,"%s","CWD\n");
-                     
-                     continue;
-                }
+
                 nwrite = 0;
              }
              /*if(strncmp(rbuf,"150",3) == 0)
