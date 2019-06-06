@@ -439,8 +439,8 @@ void cmd_tcp(int sockfd)
                      //printf("%s\n", dirname);
                      int dirnameLen= strlen(dirname);
                      //if not, the final character will be the \000
-                     dirname[dirnameLen] = '\n';
-                     sprintf(wbuf,"CWD %s",dirname);
+                     //dirname[dirnameLen] = '\n';
+                     sprintf(wbuf,"CWD %s\n",dirname);
                      write(sockfd,wbuf,strlen(wbuf));
                      
                      //sprintf(wbuf1,"%s","CWD\n");
