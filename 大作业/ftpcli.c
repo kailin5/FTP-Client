@@ -686,7 +686,7 @@ void cmd_tcp(int sockfd)
                 //if(strncmp(rbuf1,"ls",2) == 0)
                 if(tag == 2)
                 {
-                   write(sockfd,"list\n",strlen("list\n"));
+                   write(sockfd,"LIST\n",strlen("list\n"));
                    ftp_list(data_sock);
                    /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
                        printf("write error to stdout\n");*/
@@ -767,7 +767,7 @@ void cmd_tcp(int sockfd)
                      
                      continue;
                 }
-                nwrite = 0;     
+                nwrite = 0;
              }
              /*if(strncmp(rbuf,"150",3) == 0)
              {
