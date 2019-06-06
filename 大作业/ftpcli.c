@@ -441,7 +441,7 @@ void cmd_tcp(int sockfd)
                      //if not, the final character will be the \000
                      dirname[dirnameLen] = '\n';
                      sprintf(wbuf,"CWD %s",dirname);
-                     write(sockfd,wbuf,nread+1);
+                     write(sockfd,wbuf,strlen(wbuf));
                      
                      //sprintf(wbuf1,"%s","CWD\n");
                      
@@ -449,22 +449,22 @@ void cmd_tcp(int sockfd)
                  }
 
                  // mkdir function
-                 else if(strncmp(rbuf1,"mkdir",5) == 0)
+                 else if(strncmp(rbuf1,"mkdir",5) == 0 && strlen(rbuf1)!=5)
                  {
                      //sprintf(wbuf,"%s","PASV\n");
                      sscanf(rbuf1,"%s %s", tmp, dirname);
                      //printf("%s\n", dirname);
                      int dirnameLen= strlen(dirname);
                      //if not, the final character will be the \000
-                     dirname[dirnameLen] = '\n';
-                     sprintf(wbuf,"MKD %s",dirname);
-                     write(sockfd,wbuf,nread+1);
+                     //dirname[dirnameLen] = '\n';
+                     sprintf(wbuf,"MKD %s\n",dirname);
+                     write(sockfd,wbuf,strlen(wbuf));
                      //sprintf(wbuf1,"%s","CWD\n");
                      
                      continue;
                  }
 
-                 else if(strncmp(rbuf1,"delete",6) == 0)
+                 else if(strncmp(rbuf1,"delete",6) == 0 && strlen(rbuf1)!=5)
                  {
                      tag = 4; //删除文件标识符
                      //printf("%s\n",rbuf1);
@@ -498,7 +498,7 @@ void cmd_tcp(int sockfd)
                   /*************************************************************
                   // 7. code here: get - get file from ftp server
                   *************************************************************/
-                 else if(strncmp(rbuf1,"get",3) == 0)
+                 else if(strncmp(rbuf1,"get",3) == 0 && strlen(rbuf1)!=3)
                  {
                      tag = 1;            //下载文件标识符
 
@@ -515,7 +515,7 @@ void cmd_tcp(int sockfd)
                   /*************************************************************
                   // 8. code here: put -  put file upto ftp server
                   *************************************************************/                 
-                 else if(strncmp(rbuf1,"put",3) == 0)
+                 else if(strncmp(rbuf1,"put",3) == 0 && strlen(rbuf1)!=3)
                  {
                      tag = 3;            //上传文件标识符
                      sprintf(wbuf,"%s","PASV\n");
@@ -531,25 +531,17 @@ void cmd_tcp(int sockfd)
                 else if(strncmp(rbuf1,"binary",6) == 0)
                  {
                      sprintf(wbuf,"TYPE %s","I\n");
-
-                    //把内容赋值给  读缓冲区
-                     st(rbuf1,filename);
-                     printf("%s\n",filename);
                      write(sockfd,wbuf,7);
                      continue;
                  }
                  else if(strncmp(rbuf1,"ascii",5) == 0)
                  {
                      sprintf(wbuf,"TYPE %s","A\n");
-
-                    //把内容赋值给  读缓冲区
-                     st(rbuf1,filename);
-                     printf("%s\n",filename);
                      write(sockfd,wbuf,7);
                      continue;
                  }
 
-                 else if(strncmp(rbuf1,"rename",6) == 0)
+                 else if(strncmp(rbuf1,"rename",6) == 0 && strlen(rbuf1)!=6)
                  {
                      //sprintf(wbuf,"%s","PASV\n");
                      sscanf(rbuf1,"%s %s %s", tmp, filename,newfilename);
@@ -570,7 +562,14 @@ void cmd_tcp(int sockfd)
                      continue;
                  }
                  else{
-                  write(sockfd,rbuf1,strlen(rbuf1));
+                  //write(sockfd,rbuf1,strlen(rbuf1));
+                  //wbuf="Invalid input";
+                 printf("Invalid input\n");
+                 //保持被动传输模式    
+                 tag=0;
+                     sprintf(wbuf,"%s","PASV\n");                   
+                     write(sockfd,wbuf,5);
+                 
                   continue;
                  }
 
@@ -686,7 +685,7 @@ void cmd_tcp(int sockfd)
                 //if(strncmp(rbuf1,"ls",2) == 0)
                 if(tag == 2)
                 {
-                   write(sockfd,"LIST\n",strlen("list\n"));
+                   write(sockfd,"LIST\n",strlen("LIST\n"));
                    ftp_list(data_sock);
                    /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
                        printf("write error to stdout\n");*/
@@ -760,9 +759,9 @@ void cmd_tcp(int sockfd)
                      //printf("%s\n", dirname);
                      int filenameLen= strlen(filename);
                      //if not, the final character will be the \000
-                     filename[filenameLen] = '\n';
-                     sprintf(wbuf,"DELE %s",filename);
-                     write(sockfd,wbuf,nread+1);
+                     //filename[filenameLen] = '\n';
+                     sprintf(wbuf,"DELE %s\n",filename);
+                     write(sockfd,wbuf,strlen(wbuf));
                      //sprintf(wbuf1,"%s","CWD\n");
                      
                      continue;
