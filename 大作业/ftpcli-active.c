@@ -327,11 +327,15 @@ int ftp_put(int sck,char *pUploadFileName_s)
        }
        else if(nread == 0)
           break;
+       /*
        if(write(STDOUT_FILENO,rbuf1,nread) != nread)
             printf("send error!");
+
+      */
        if(write(newsockfd,rbuf1,nread) != nread)
             printf("send error!");
    }
+   bzero(rbuf1,strlen(rbuf1));
    if(close(sck) < 0)
         printf("close error\n");
     if(close(newsockfd) < 0)
@@ -438,8 +442,8 @@ void cmd_tcp(int sockfd)
                      //printf("%s\n", dirname);
                      int dirnameLen= strlen(dirname);
                      //if not, the final character will be the \000
-                     dirname[dirnameLen] = '\n';
-                     sprintf(wbuf,"CWD %s",dirname);
+                     //dirname[dirnameLen] = '\n';
+                     sprintf(wbuf,"CWD %s\n",dirname);
                      write(sockfd,wbuf,strlen(wbuf));
                      
                      //sprintf(wbuf1,"%s","CWD\n");
