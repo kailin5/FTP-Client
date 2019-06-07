@@ -1,0 +1,26 @@
+扩展功能说明：
+
+主动模式：
+
+1：关闭windows 防火墙 or 放通你学号的端口
+
+2：获取本机ip地址 
+使用命令ipconfig or ifconfig
+得到本机ipv4地址，替代PORT 的前四位和下面active Address
+注意 PORT 后面的地址分隔为逗号
+
+char activeCommand[27] = "PORT 10,128,225,140,50,113\n";
+char activeAddress[100] = "10.128.225.140";
+
+activeCommand 后面两位为你的端口号（学号）
+例子中为 50*256 +113 =  12913
+
+计算方法，学号/256 第5位， 学号%256 第6位
+
+3： 替换完后，运行ls,put,get，抓包后发现是active mode的
+
+
+
+限速：
+没什么好说的，分别运行两个文件，get一个大一点的文件，发现free的快，limit的慢
+但是现在limit 还没调试出来
