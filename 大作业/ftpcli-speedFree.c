@@ -42,8 +42,6 @@ struct  timezone{
 #define CLOSEDATA     226       
 #define ACTIONOK      250    
 
-//10KB/s
-#define SPEEDLIMIT 0.01
 
 /* DefinE global variables */
 char *rbuf,*rbuf1,*wbuf,*wbuf1;           /* pointer that is malloc'ed */
@@ -208,16 +206,14 @@ void ftp_list(int sockfd)
         printf("close error\n");
 }
 
-
-void checkSpeed(speed){
-  int sleepTime=0;
-  if (speed>SPEEDLIMIT){
+/*
+void checkSpeed(){
+  int stopTime = 1;
+  if (curSpeed>SPEEDLIMIT){
 
   }
 }
-
-
-
+*/
 
 /* download file from ftp server */
 int ftp_get(int sck,char *pDownloadFileName)
@@ -259,10 +255,7 @@ int ftp_get(int sck,char *pDownloadFileName)
               //MB/s
               printf("current package count is %d  ",packageCount);
               float speed = packageCount / timeuse;
-              checkSpeed(speed);
               printf("current speed is %.2f MB/s\n " ,speed );
-
-
               gettimeofday( &start, NULL );
               packageCount =0;
 
