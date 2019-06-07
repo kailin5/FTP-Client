@@ -209,11 +209,19 @@ void ftp_list(int sockfd)
 }
 
 
-void checkSpeed(speed){
-  int sleepTime=0;
+int checkSpeed(float speed,float timeuse){
+  float sleepTime=0;
+  printf("speed is %.2f\n",speed);
+  printf("timeuse is %.2f\n",timeuse);
   if (speed>SPEEDLIMIT){
-
+    sleepTime = (1/SPEEDLIMIT)*timeuse-timeuse;
+    //change from nano sec to sec
+    sleepTime /= 10000000
+    printf("sleepTime is %.2f\n",sleepTime);
+    sleep(sleepTime);
+    return 1;
   }
+  return 0;
 }
 
 
@@ -226,11 +234,12 @@ int ftp_get(int sck,char *pDownloadFileName)
    int nread;
    int loopCount = 0;
    int packageCount=0;
+   int checkSpeedFlag = 0;
    printf("%d\n",handle);
    /*if(handle == -1) 
        return -1;*/
    struct timeval start, end;
-   printf("正在下载文件。。。。\n");
+   printf("downloading...\n");
    //checkSpeed
        gettimeofday( &start, NULL );
    for(;;)
@@ -259,8 +268,15 @@ int ftp_get(int sck,char *pDownloadFileName)
               //MB/s
               printf("current package count is %d  ",packageCount);
               float speed = packageCount / timeuse;
-              checkSpeed(speed);
-              printf("current speed is %.2f MB/s\n " ,speed );
+              checkSpeedFlag = checkSpeed(speed,timeuse);
+              if (checkSpeedFlag == 1)
+              {
+                printf("current speed is %.2f MB/s\n ",SPEEDLIMIT);
+              }
+              else{
+                printf("current speed is %.2f MB/s\n " ,speed );  
+              }
+              
 
 
               gettimeofday( &start, NULL );
