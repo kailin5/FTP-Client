@@ -216,8 +216,8 @@ int checkSpeed(float speed,float timeuse){
   if (speed>SPEEDLIMIT){
     sleepTime = (1/SPEEDLIMIT)*timeuse-timeuse;
     //change from nano sec to sec
-    sleepTime /= 10000000
-    printf("sleepTime is %.2f\n",sleepTime);
+    sleepTime /= 10000000;
+    printf("sleepTime is %.2f s \n",sleepTime);
     sleep(sleepTime);
     return 1;
   }
