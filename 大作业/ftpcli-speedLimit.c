@@ -211,12 +211,14 @@ void ftp_list(int sockfd)
 
 int checkSpeed(float speed,float timeuse){
   float sleepTime=0;
-  printf("speed is %.2f\n",speed);
-  printf("timeuse is %.2f\n",timeuse);
+  //debug purpose only
+  //printf("speed is %.2f MB/s\n",speed);
+  //printf("timeuse is %.2f\n",timeuse);
   if (speed>SPEEDLIMIT){
     sleepTime = (1/SPEEDLIMIT)*timeuse-timeuse;
     //change from nano sec to sec
     sleepTime /= 10000000;
+    sleepTime +=1;
     printf("sleepTime is %.2f s \n",sleepTime);
     sleep(sleepTime);
     return 1;
@@ -241,11 +243,15 @@ int ftp_get(int sck,char *pDownloadFileName)
    struct timeval start, end;
    printf("downloading...\n");
    //checkSpeed
-       gettimeofday( &start, NULL );
+   gettimeofday( &start, NULL );
    for(;;)
    {  
 
-       if((nread = recv(sck,rbuf1,MAXBUF,0)) < 0)
+      if(checkSpeedFlag == 1){
+        //printf("Entering pause mode\n");
+      }
+      else{
+        if((nread = recv(sck,rbuf1,MAXBUF,0)) < 0 )
        {  
           printf("receive error\n");
        }
@@ -253,25 +259,41 @@ int ftp_get(int sck,char *pDownloadFileName)
        {
           printf("over\n");
           break;
-       }
+       } 
+      }
+       
        //Limiting speed function
        
        //printf("nread is %d\n",nread);//1024,760 
        packageCount += nread;
        loopCount += 1;
        // 时间约为1s,但是具体时间也会变化
-       if(loopCount % 150 == 0)
+       if(loopCount % 100 == 0)
        {
               gettimeofday( &end, NULL );
               float timeuse = 1000000 * ( end.tv_sec - start.tv_sec ) + end.tv_usec - start.tv_usec;
        
               //MB/s
-              printf("current package count is %d  ",packageCount);
+              
+              //debug purpose only
+              //printf("current package count is %d  ",packageCount);
+              
+
               float speed = packageCount / timeuse;
               checkSpeedFlag = checkSpeed(speed,timeuse);
+              
               if (checkSpeedFlag == 1)
-              {
+              { 
                 printf("current speed is %.2f MB/s\n ",SPEEDLIMIT);
+                if((nread = recv(sck,rbuf1,1,0)) < 0 )
+                 {  
+                    printf("receive error\n");
+                 }
+                 else if(nread == 0)
+                 {
+                    printf("over\n");
+                    break;
+                 } 
               }
               else{
                 printf("current speed is %.2f MB/s\n " ,speed );  
