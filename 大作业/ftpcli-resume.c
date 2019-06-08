@@ -285,21 +285,50 @@ int ftp_get(int sck,char *pDownloadFileName)
           printf("over\n");
           break;
        }
-       //Limiting speed function
-       /*
-       printf("nread is %d\n",nread);//1024,760 
 
-       gettimeofday( &end, NULL );
-       float timeuse = 1000000 * ( end.tv_sec - start.tv_sec ) + end.tv_usec - start.tv_usec;
-
-       //MB/s
-       float speed = nread / timeuse;
-       printf("current speed is %.2f" ,speed );
-
-       */
-    //   printf("%s\n",rbuf1);
        if(write(handle,rbuf1,nread) != nread)
            printf("receive error from server!");
+
+      /*  Not print file content to console
+       if(write(STDOUT_FILENO,rbuf1,nread) != nread)
+           printf("receive error from server!");
+      */
+         
+   }
+        bzero(rbuf1,strlen(rbuf1));
+       if(close(sck) < 0)
+           printf("close error\n");
+      return 0;
+}
+
+/* Resume downloading file from ftp server */
+int ftp_resume(int sck,char *pDownloadFileName)
+{
+   int handle = open(pDownloadFileName,O_RDWR | O_APPEND);
+   int nread;
+   printf("%d\n",handle);
+   /*if(handle == -1) 
+       return -1;*/
+    struct timeval start, end;
+    
+    printf("Now file is resuming downloading...\n"); 
+   for(;;)
+   {  
+
+       //checkSpeed
+       //gettimeofday( &start, NULL );
+
+       if((nread = recv(sck,rbuf1,MAXBUF,0)) < 0)
+       {  
+          printf("receive error\n");
+       }
+       else if(nread == 0)
+       {
+          printf("over\n");
+          break;
+       }
+       if(write(handle,rbuf1,nread) != nread)
+           printf("receive error from server!\n");
 
       /*  Not print file content to console
        if(write(STDOUT_FILENO,rbuf1,nread) != nread)
@@ -707,33 +736,96 @@ void cmd_tcp(int sockfd)
                     //printf("%d\n",str);
 
                     //断点续传检测
+                    FILE * pFile;
+                    long size;
+                    pFile = fopen (filename,"rb");
+                    if (pFile==NULL)
+                    {  
+                       sprintf(wbuf,"RETR %s\n",filename);
+                      //printf("%s\n",wbuf);
+                      //int p = 5 + str + 1;
 
+                      //命令套接字中写入  下载文件命令
+                      write(sockfd,wbuf,strlen(wbuf));
+                      //9.清空读缓冲区 和 写缓冲区
+                      bzero(rbuf,strlen(rbuf));
+                        //10.读套接字中的内容
 
-
-                    sprintf(wbuf,"RETR %s\n",filename);
-
-                    //printf("%s\n",wbuf);
-                    //int p = 5 + str + 1;
-
-                    //命令套接字中写入  下载文件命令
-                    write(sockfd,wbuf,strlen(wbuf));
-
-                    //9.清空读缓冲区 和 写缓冲区
-                    bzero(rbuf,strlen(rbuf));
-                      //10.读套接字中的内容
-
-                    if((nread = recv(sockfd,rbuf,MAXBUF,0)) <0)
-                        printf("recv error\n");
-
-                    //printf("%s",rbuf);
-                    if(strncmp(rbuf,"550",3) == 0)
+                      if((nread = recv(sockfd,rbuf,MAXBUF,0)) <0)
+                          printf("recv error\n");
+                      //printf("%s",rbuf);
+                      if(strncmp(rbuf,"550",3) == 0)
+                        {
+                          replycode = 550;
+                        }
+                      // 如果有这个文件，就下载
+                        else
+                        {
+                          ftp_get(data_sock,filename);
+                        }
+                      }
+                    else
                     {
-                      replycode = 550;
+                         fseek (pFile, 0, SEEK_END);   ///将文件指针移动文件结尾
+                         size=ftell (pFile); ///求出当前文件指针距离文件开始的字节数
+                         fclose (pFile);
+                         printf ("Size of this file: %ld bytes.\n",size);
+
+
+                          sprintf(wbuf,"REST %ld\n",size);
+                          write(sockfd,wbuf,strlen(wbuf));
+
+                          //9.清空读缓冲区 和 写缓冲区
+                          bzero(rbuf,strlen(rbuf));
+                            //10.读套接字中的内容
+
+                          if((nread = recv(sockfd,rbuf,MAXBUF,0)) <0)
+                              printf("recv error\n");
+
+
+                          //printf("%s",rbuf);
+                          if(strncmp(rbuf,"350",3) == 0)
+                          {
+                            //如果不进入binary模式，无法开始传输，会报错550 No support for resume of ASCII transfer
+                          sprintf(wbuf,"TYPE I\n");
+                          write(sockfd,wbuf,strlen(wbuf));
+
+                          //9.清空读缓冲区 和 写缓冲区
+                          bzero(rbuf,strlen(rbuf));
+                            //10.读套接字中的内容
+
+                          if((nread = recv(sockfd,rbuf,MAXBUF,0)) <0)
+                              printf("recv error\n");
+                        
+                            sprintf(wbuf,"RETR %s\n",filename);
+
+                            //命令套接字中写入  下载文件命令
+                            write(sockfd,wbuf,strlen(wbuf));
+
+                            //9.清空读缓冲区 和 写缓冲区
+                            bzero(rbuf,strlen(rbuf));
+                              //10.读套接字中的内容
+
+                            if((nread = recv(sockfd,rbuf,MAXBUF,0)) <0)
+                                printf("recv error\n");
+
+                            //printf("%s",rbuf);
+                            if(strncmp(rbuf,"550",3) == 0)
+                              {
+                                replycode = 550;
+                              }
+                            // 如果有这个文件，就下载
+                              else
+                              {
+                                ftp_resume(data_sock,filename);
+                              }
+                          }
                     }
-                    // 如果有这个文件，就下载
-                    else{
-                      ftp_get(data_sock,filename);
-                    }
+
+
+
+
+                    
                     //printf("%d\n",write(sockfd,wbuf,strlen(wbuf)));
                     //printf("%d\n",p);
 
@@ -765,21 +857,6 @@ void cmd_tcp(int sockfd)
                     
                     
                 }
-                /*  
-                else if (tag == 4){
-                   //sprintf(wbuf,"%s","PASV\n");
-                     sscanf(rbuf1,"%s %s", tmp, filename);
-                     //printf("%s\n", dirname);
-                     int filenameLen= strlen(filename);
-                     //if not, the final character will be the \000
-                     //filename[filenameLen] = '\n';
-                     sprintf(wbuf,"DELE %s\n",filename);
-                     write(sockfd,wbuf,strlen(wbuf));
-                     //sprintf(wbuf1,"%s","CWD\n");
-                     
-                     continue;
-                }
-                */
                 nwrite = 0;
              }
              /*if(strncmp(rbuf,"150",3) == 0)
