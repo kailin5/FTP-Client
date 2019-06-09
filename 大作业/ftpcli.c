@@ -712,8 +712,10 @@ void cmd_tcp(int sockfd)
 
                 //获取服务器返回的 接收数据的端口，和地址
                 int port1 = strtosrv(rbuf);
-                printf("%d\n",port1);
-                printf("%s\n",host);
+                
+                //现在主机地址和端口号将不被打印出来
+                //printf("%d\n",port1);
+                //printf("%s\n",host);
                 printf("Retrieving Data...\n");
 
                 //创建新的传输数据的套接字?
