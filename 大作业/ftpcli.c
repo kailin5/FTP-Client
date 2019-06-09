@@ -51,7 +51,8 @@ char tmp[100];
 char dirname[100];            
 char *host;                            /* hostname or dotted-decimal string */
 struct sockaddr_in servaddr;   
-
+//if binary mode flag =1; else,flag=0
+int binaryFlag = 1;
 
 //int mygetch();
 //int getpasswd(char *passwd, int size);
@@ -84,6 +85,45 @@ int set_disp_mode(int fd,int option)
    }
    return 0;
 }
+
+//remove \r
+void remove_char_from_string(char c, char *str)
+{
+    int i=0;
+    int len = strlen(str)+1;
+
+    for(i=0; i<len; i++)
+    {
+        if(str[i] == c)
+        {
+            // Move all the char following the char "c" by one to the left.
+            strncpy(&str[i],&str[i+1],len-i);
+        }
+    }
+}
+
+//add \r
+void add_char_from_string(char c, char *str)
+{
+    int i=0;
+    int len = strlen(str)+1;
+
+    char *tempStr;
+    //copy the string
+    strncpy(&tempStr[0],&str[0],len);
+
+
+    for(i=0; i<len; i++)
+    {
+        if(str[i] == '\n')
+        {
+            // Move all the char following the char "c" by one to the right, then set \r to current.
+            strncpy(&str[i+1],&tempStr[i],len-i);
+            str[i] = '\r';
+        }
+    }
+}
+
 
 int main(int argc,char *argv[])
 {
@@ -285,19 +325,11 @@ int ftp_get(int sck,char *pDownloadFileName)
           printf("over\n");
           break;
        }
-       //Limiting speed function
-       /*
-       printf("nread is %d\n",nread);//1024,760 
 
-       gettimeofday( &end, NULL );
-       float timeuse = 1000000 * ( end.tv_sec - start.tv_sec ) + end.tv_usec - start.tv_usec;
-
-       //MB/s
-       float speed = nread / timeuse;
-       printf("current speed is %.2f" ,speed );
-
-       */
-    //   printf("%s\n",rbuf1);
+       //如果是ascii 模式
+       if(binaryFlag == 0){
+          remove_char_from_string('\r',rbuf1);
+       }
        if(write(handle,rbuf1,nread) != nread)
            printf("receive error from server!");
 
@@ -336,6 +368,9 @@ int ftp_put(int sck,char *pUploadFileName_s)
        if(write(STDOUT_FILENO,rbuf1,nread) != nread)
             printf("send error!");
       */
+        if(binaryFlag == 0){
+          add_char_from_string('\r',rbuf1);
+       }
        if(write(sck,rbuf1,nread) != nread)
             printf("send error!");
    }
@@ -536,12 +571,14 @@ void cmd_tcp(int sockfd)
                  {
                      sprintf(wbuf,"TYPE %s","I\n");
                      write(sockfd,wbuf,7);
+                     binaryFlag = 1;
                      continue;
                  }
                  else if(strncmp(rbuf1,"ascii",5) == 0)
                  {
                      sprintf(wbuf,"TYPE %s","A\n");
                      write(sockfd,wbuf,7);
+                     binaryFlag = 0;
                      continue;
                  }
 
@@ -765,21 +802,6 @@ void cmd_tcp(int sockfd)
                     
                     
                 }
-                /*  
-                else if (tag == 4){
-                   //sprintf(wbuf,"%s","PASV\n");
-                     sscanf(rbuf1,"%s %s", tmp, filename);
-                     //printf("%s\n", dirname);
-                     int filenameLen= strlen(filename);
-                     //if not, the final character will be the \000
-                     //filename[filenameLen] = '\n';
-                     sprintf(wbuf,"DELE %s\n",filename);
-                     write(sockfd,wbuf,strlen(wbuf));
-                     //sprintf(wbuf1,"%s","CWD\n");
-                     
-                     continue;
-                }
-                */
                 nwrite = 0;
              }
              /*if(strncmp(rbuf,"150",3) == 0)
