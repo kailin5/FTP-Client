@@ -51,8 +51,8 @@ char tmp[100];
 char dirname[100];            
 char *host;                            /* hostname or dotted-decimal string */
 struct sockaddr_in servaddr;   
-char activeCommand[27] = "PORT 10,128,225,140,50,113\n";
-char activeAddress[100] = "10.128.225.140";
+char activeCommand[27] = "PORT 10,128,234,192,50,113\n";
+char activeAddress[100] = "10.128.234.192";
 
 //int mygetch();
 //int getpasswd(char *passwd, int size);
@@ -253,7 +253,7 @@ int ftp_get(int sck,char *pDownloadFileName)
 {
    int handle = open(pDownloadFileName,O_WRONLY | O_CREAT | O_TRUNC, S_IREAD| S_IWRITE);
    int nread;
-   printf("%d\n",handle);
+   //printf("%d\n",handle);
    /*if(handle == -1) 
        return -1;*/
    
@@ -282,7 +282,7 @@ int ftp_get(int sck,char *pDownloadFileName)
           printf("over\n");
           break;
        }
-       printf("%s\n",rbuf1);
+       //printf("%s\n",rbuf1);
        if(write(handle,rbuf1,nread) != nread)
            printf("receive error from server!");
 
@@ -336,7 +336,8 @@ int ftp_put(int sck,char *pUploadFileName_s)
             printf("send error!");
    }
    bzero(rbuf1,strlen(rbuf1));
-   if(close(sck) < 0)
+   
+    if(close(sck) < 0)
         printf("close error\n");
     if(close(newsockfd) < 0)
         printf("close error\n");
@@ -525,7 +526,7 @@ void cmd_tcp(int sockfd)
                     //把内容赋值给  读缓冲区
                      st(rbuf1,filename);
                      //printf("%s\n",filename);
-                     write(sockfd,wbuf,27);
+                     write(sockfd,wbuf,strlen(activeCommand));
                      continue;
                  }
 
@@ -697,7 +698,7 @@ void cmd_tcp(int sockfd)
                    ftp_list(data_sock);
                    /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
                        printf("write error to stdout\n");*/
-                   
+                   close(data_sock);
                 }
                 //else if(strncmp(rbuf1,"get",3) == 0)
                 else if(tag == 1)
@@ -737,7 +738,7 @@ void cmd_tcp(int sockfd)
                     //printf("%d\n",write(sockfd,wbuf,strlen(wbuf)));
                     //printf("%d\n",p);
 
-                    
+                    close(data_sock);
                     
                 }
                 else if(tag == 3)
@@ -753,7 +754,29 @@ void cmd_tcp(int sockfd)
                     {
                       close(handle);
                       write(sockfd,wbuf,strlen(wbuf));
-                      ftp_put(data_sock,filename);
+
+
+
+                        //9.清空读缓冲区 和 写缓冲区
+                      bzero(rbuf,strlen(rbuf));
+                        //10.读套接字中的内容
+
+                      if((nread = recv(sockfd,rbuf,MAXBUF,0)) <0)
+                          {
+                            printf("recv error\n");
+                            exit(1);
+                          }
+
+                      //printf("%s",rbuf);
+                      if(strncmp(rbuf,"553",3) == 0)
+                      {
+                        replycode = 553;
+                      }
+                      // 如果允许上传这个文件就上传
+                      else{
+                        close(handle);
+                        ftp_put(data_sock,filename);
+                      }
                     }
                     else{
                       bzero(wbuf,strlen(wbuf));
@@ -763,7 +786,7 @@ void cmd_tcp(int sockfd)
                        //int c_sock;
                      
                     
-                    
+                    close(data_sock);
                 }
                 else if (tag == 4){
                      sscanf(rbuf1,"%s %s", tmp, filename);
