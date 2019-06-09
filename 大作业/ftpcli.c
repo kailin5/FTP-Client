@@ -63,7 +63,8 @@ void  ftp_list(int sockfd);
 int ftp_get(int sck,char *pDownloadFileName);
 int ftp_put(int sck,char *pUploadFileName_s);
 void cmd_tcp(int sockfd);                    
-
+void remove_char_from_string(char c, char *str);
+void add_char_from_string(char c, char *str);
 //函数set_disp_mode用于控制是否开启输入回显功能
 //如果option为0，则关闭回显，为1则打开回显
 int set_disp_mode(int fd,int option)
@@ -472,7 +473,7 @@ void cmd_tcp(int sockfd)
                   /*************************************************************
                   // 5. code here: cd - change working directory/
                   *************************************************************/                 
-                 else if(strncmp(rbuf1,"cd",2) == 0)
+                 else if(strncmp(rbuf1,"cd",2) == 0 && strlen(rbuf1)!=3)
                  {
                      //sprintf(wbuf,"%s","PASV\n");
                      sscanf(rbuf1,"%s %s", tmp, dirname);
@@ -489,7 +490,7 @@ void cmd_tcp(int sockfd)
                  }
 
                  // mkdir function
-                 else if(strncmp(rbuf1,"mkdir",5) == 0 && strlen(rbuf1)!=5)
+                 else if(strncmp(rbuf1,"mkdir",5) == 0 && strlen(rbuf1)!=6)
                  {
                      //sprintf(wbuf,"%s","PASV\n");
                      sscanf(rbuf1,"%s %s", tmp, dirname);
@@ -537,7 +538,7 @@ void cmd_tcp(int sockfd)
                   /*************************************************************
                   // 7. code here: get - get file from ftp server
                   *************************************************************/
-                 else if(strncmp(rbuf1,"get",3) == 0 && strlen(rbuf1)!=3)
+                 else if(strncmp(rbuf1,"get",3) == 0 && strlen(rbuf1)!=4)
                  {
                      tag = 1;            //下载文件标识符
 
@@ -554,7 +555,7 @@ void cmd_tcp(int sockfd)
                   /*************************************************************
                   // 8. code here: put -  put file upto ftp server
                   *************************************************************/                 
-                 else if(strncmp(rbuf1,"put",3) == 0 && strlen(rbuf1)!=3)
+                 else if(strncmp(rbuf1,"put",3) == 0 && strlen(rbuf1)!=4)
                  {
                      tag = 3;            //上传文件标识符
                      sprintf(wbuf,"%s","PASV\n");
@@ -608,8 +609,8 @@ void cmd_tcp(int sockfd)
                  printf("Invalid input\n");
                  //保持被动传输模式    
                  tag=0;
-                     sprintf(wbuf,"%s","PASV\n");                   
-                     write(sockfd,wbuf,5);
+                     sprintf(wbuf,"%s","PWD\n");                   
+                     write(sockfd,wbuf,4);
                  
                   continue;
                  }
