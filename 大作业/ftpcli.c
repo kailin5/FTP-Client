@@ -606,11 +606,12 @@ void cmd_tcp(int sockfd)
                  else{
                   //write(sockfd,rbuf1,strlen(rbuf1));
                   //wbuf="Invalid input";
-                 printf("Invalid input\n");
+                 printf("This is an Invalid input!!!!!!\n");
                  //保持被动传输模式    
                  tag=0;
-                     sprintf(wbuf,"%s","PWD\n");                   
-                     write(sockfd,wbuf,4);
+                 replycode = 550;
+                     //sprintf(wbuf,"%s","PWD\n");                   
+                     //write(sockfd,wbuf,4);
                  
                   continue;
                  }
