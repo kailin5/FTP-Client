@@ -505,7 +505,7 @@ void cmd_tcp(int sockfd)
                      continue;
                  }
 
-                 else if(strncmp(rbuf1,"delete",6) == 0 && strlen(rbuf1)!=5)
+                 else if(strncmp(rbuf1,"delete",6) == 0 && strlen(rbuf1)!=7)
                  {
                      sscanf(rbuf1,"%s %s", tmp, filename);
                      //printf("%s\n", dirname);
@@ -583,7 +583,7 @@ void cmd_tcp(int sockfd)
                      continue;
                  }
 
-                 else if(strncmp(rbuf1,"rename",6) == 0 && strlen(rbuf1)!=6)
+                 else if(strncmp(rbuf1,"rename",6) == 0 && strlen(rbuf1)!=7)
                  {
                      //sprintf(wbuf,"%s","PASV\n");
                      sscanf(rbuf1,"%s %s %s", tmp, filename,newfilename);
