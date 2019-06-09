@@ -587,15 +587,27 @@ void cmd_tcp(int sockfd)
                  {
                      //sprintf(wbuf,"%s","PASV\n");
                      sscanf(rbuf1,"%s %s %s", tmp, filename,newfilename);
+                     
                      //printf("%s\n", dirname);
                      int filenameLen= strlen(filename);
                      newfilenameLen = strlen(newfilename);
-                     //if not, the final character will be the \000
+                     
+                     if (newfilenameLen == 0){
+                      printf("Please type in new file name!\n");
+                      replycode = 550;
+
+                     }
+                     else{
+                         //if not, the final character will be the \000
                      filename[filenameLen] = '\n';
                      newfilename[newfilenameLen] = '\n';
+
+
                      sprintf(wbuf,"RNFR %s",filename);
                      write(sockfd,wbuf,filenameLen+6);
 
+                     }
+                     
                      
 
                      nwrite = 0;
