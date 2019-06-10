@@ -649,9 +649,6 @@ void cmd_tcp(int sockfd)
         
 
 
-//bzero(rbuf,sizeof(rbuf));
-                //printf("%d\n",fd);
-                //if(strncmp(rbuf1,"ls",2) == 0)
                 if(tag == 2)
                 {
                    write(sockfd,"LIST\n",strlen("LIST\n"));
