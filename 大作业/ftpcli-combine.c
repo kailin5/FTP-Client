@@ -53,8 +53,8 @@ char dirname[100];
 char *host;                            /* hostname or dotted-decimal string */
 struct sockaddr_in servaddr;   
 //if binary mode flag =1; else,flag=0
-char activeCommand[27] = "PORT 10,128,234,192,50,113\n";
-char activeAddress[100] = "10.128.234.192";
+char activeCommand[27] = "PORT 10,30,132,155,50,113\n";
+char activeAddress[100] = "10.30.132.155";
 int binaryFlag = 1;
 
 //int mygetch();

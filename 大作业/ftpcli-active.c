@@ -51,8 +51,8 @@ char tmp[100];
 char dirname[100];            
 char *host;                            /* hostname or dotted-decimal string */
 struct sockaddr_in servaddr;   
-char activeCommand[27] = "PORT 10,128,234,192,50,113\n";
-char activeAddress[100] = "10.128.234.192";
+char activeCommand[27] = "PORT 10,30,132,155,50,113\n";
+char activeAddress[100] = "10.30.132.155";
 
 //int mygetch();
 //int getpasswd(char *passwd, int size);
@@ -154,6 +154,7 @@ int cliopen(char *host,int port)
 
 int dataSock(char *host,int port){
   //printf("正在开启data port\n");
+  printf("opening data port\n");
   int sock;
   struct sockaddr_in severAddr;
   struct sockaddr_in clientAddr;
@@ -172,12 +173,13 @@ int dataSock(char *host,int port){
   severAddr.sin_family = AF_INET;
   severAddr.sin_addr.s_addr = htonl(INADDR_ANY);
   severAddr.sin_port = htons(severPort);
+  //printf("----------->\n");
   if(bind(sock,(struct sockaddr *) &severAddr, sizeof(severAddr)) < 0){
     printf("bind() failed.\n");
     exit(1);
   }
   listen(sock, 1);
-  //printf("已经开启data port");
+  printf("successfully opening data port\n");
   return sock;
 
   
@@ -204,19 +206,20 @@ void ftp_list(int sockfd)
     int nread;
     struct sockaddr_in clientAddr;
     unsigned int cliAddrLen;
+    printf("reaching here\n");
     //printf("%d",tmp);
     //printf("%d",sockfd);
     int newsockfd = 0;
         cliAddrLen = sizeof(clientAddr);
+        printf("reaching here\n");
         if((newsockfd = accept(sockfd, (struct sockaddr *) &clientAddr, &cliAddrLen)) < 0)
         {//create a new socket
           printf("accept() failed.\n");
         exit(1);
       }
-
+      printf("reaching here\n");
     for( ; ; )
     {   
-
         /* data to read from socket */
         if((nread = recv(newsockfd,rbuf1,MAXBUF,0)) < 0)
         {
@@ -231,8 +234,9 @@ void ftp_list(int sockfd)
             printf("send error to stdout\n");
         /*else
             printf("read something\n");*/
-          printf("%d",nread);
+          //printf("%d",nread);
     }
+    printf("reaching here\n");
     if(close(sockfd) < 0)
         printf("close error\n");
     if(close(newsockfd) < 0)
@@ -271,7 +275,6 @@ int ftp_get(int sck,char *pDownloadFileName)
 
    for(;;)
    {  
-
 
        if((nread = recv(newsockfd,rbuf1,MAXBUF,0)) < 0)
        {  
@@ -414,7 +417,7 @@ void cmd_tcp(int sockfd)
               }
               
                /* send command */
-              if(replycode == 550 || replycode == 553 || replycode == LOGIN || replycode == CLOSEDATA || replycode == PATHNAME || replycode == ACTIONOK)
+              if(replycode == 425 ||replycode == 550 || replycode == 553 || replycode == LOGIN || replycode == CLOSEDATA || replycode == PATHNAME || replycode == ACTIONOK)
               {
                 /* pwd -  print working directory */
                 if(strncmp(rbuf1,"pwd",3) == 0)
@@ -494,8 +497,7 @@ void cmd_tcp(int sockfd)
                      //read
                      //sprintf(wbuf1,"%s","LIST -al\n");
                      nwrite = 0;
-                     //write(sockfd,wbuf1,nwrite);
-                     //ftp_list(sockfd);
+
                      continue;    
                  }
                   /*************************************************************
@@ -623,6 +625,7 @@ void cmd_tcp(int sockfd)
                     printf("write error to stdout\n");*/
                 replycode = PASSWORD;
              }
+
              if(strncmp(rbuf,"230",3) == 0)
              {
                 /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
@@ -651,6 +654,10 @@ void cmd_tcp(int sockfd)
              {
                 replycode = 550;
              }
+             if(strncmp(rbuf,"425",3) == 0)
+             {
+                replycode = 425;
+             }
              //not allow to create file
              if(strncmp(rbuf,"553",3) == 0)
              {
@@ -674,30 +681,39 @@ void cmd_tcp(int sockfd)
              //fprintf(stderr,"%d\n",1);
              if(strncmp(rbuf,"200 PORT",8) == 0)
              {
-                //printf("%d\n",1);
-                /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-                   printf("write error to stdout\n");*/
 
                 //获取服务器返回的 接收数据的端口，和地址
                 int port1 = 12913;
                 printf("%d\n",port1);
                 printf("%s\n",host);
 
-                //创建新的传输数据的套接字?
-                //1. 猜测 ====================应该是将 ssl 接口放在这里，用来传输数据
                 data_sock = dataSock(host,port1);
         
 
 
-//bzero(rbuf,sizeof(rbuf));
                 //printf("%d\n",fd);
                 //if(strncmp(rbuf1,"ls",2) == 0)
                 if(tag == 2)
                 {
+                   printf("reaching here...\n");
                    write(sockfd,"LIST\n",strlen("LIST\n"));
-                   ftp_list(data_sock);
-                   /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-                       printf("write error to stdout\n");*/
+                  if((nread = recv(sockfd,rbuf,MAXBUF,0)) <0)
+                    {
+                          printf("recv error\n");
+                          exit(1);
+                    }
+
+                    //printf("%s",rbuf);
+                    if(strncmp(rbuf,"425",3) == 0)
+                    {
+                      printf("Server didn't send any data!\n");
+                      replycode = 425;
+                    }
+                    // 如果有这个文件，就下载
+                    else{
+                      ftp_list(data_sock);
+                    }
+                   
                    close(data_sock);
                 }
                 //else if(strncmp(rbuf1,"get",3) == 0)
@@ -730,6 +746,11 @@ void cmd_tcp(int sockfd)
                     if(strncmp(rbuf,"550",3) == 0)
                     {
                       replycode = 550;
+                    }
+                    else if(strncmp(rbuf,"425",3) == 0)
+                    {
+                      printf("Server didn't send any data!\n");
+                      replycode = 425;
                     }
                     // 如果有这个文件，就下载
                     else{
@@ -771,6 +792,11 @@ void cmd_tcp(int sockfd)
                       if(strncmp(rbuf,"553",3) == 0)
                       {
                         replycode = 553;
+                      }
+                      else if(strncmp(rbuf,"425",3) == 0)
+                     {
+                      printf("Server didn't send any data!\n");
+                      replycode = 425;
                       }
                       // 如果允许上传这个文件就上传
                       else{
